@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  team-toolbox-mcp:
+    image: fastmcp_demo:latest
+    container_name: fastmcp_demo
+    restart: unless-stopped
+    ports:
+      - "20000:20000"
+    environment:
+      - TEAM_NAME=${TEAM_NAME:-Development Team}
+      - TEAM_TIMEZONE=${TEAM_TIMEZONE:-Asia/Shanghai}
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com/your-group}
+      - WIKI_URL=${WIKI_URL:-https://wiki.example.com}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:20000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - mcp-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  mcp-network:
+    driver: bridge
+#    ipam:
+#      config:
+#        - subnet: 192.168.100.0/24
