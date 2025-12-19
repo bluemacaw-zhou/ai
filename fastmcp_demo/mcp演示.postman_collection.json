@@ -1,0 +1,86 @@
+{
+	"info": {
+		"_postman_id": "8d72afc9-5220-4388-ad6f-26b3499bba64",
+		"name": "mcp演示",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "mcp连接初始化",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json, text/event-stream",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2024-11-05\",\n    \"capabilities\": {\n      \"roots\": {\n        \"listChanged\": true\n      }\n    },\n    \"clientInfo\": {\n      \"name\": \"postman-client\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "http://10.106.51.218:20000/mcp",
+					"protocol": "http",
+					"host": [
+						"10",
+						"106",
+						"51",
+						"218"
+					],
+					"port": "20000",
+					"path": [
+						"mcp"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "mcp列出工具",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json, text/event-stream",
+						"type": "default"
+					},
+					{
+						"key": "mcp-session-id",
+						"value": "6ce54260948044b49ecc3427aeb684c7",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 1,\n    \"method\": \"tools/list\",\n    \"params\": {}\n  }"
+				},
+				"url": {
+					"raw": "http://10.106.51.218:20000/mcp",
+					"protocol": "http",
+					"host": [
+						"10",
+						"106",
+						"51",
+						"218"
+					],
+					"port": "20000",
+					"path": [
+						"mcp"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
