@@ -1,0 +1,12 @@
+# FastMCP - 支持 HTTP 传输的 MCP 框架
+fastmcp==2.14.1
+
+# MCP 核心库
+mcp==1.24.0
+
+# Web 框架依赖
+uvicorn>=0.27.0
+starlette>=0.36.0
+
+# 工具依赖
+python-dotenv>=1.0.0
