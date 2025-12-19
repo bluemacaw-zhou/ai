@@ -1,0 +1,16 @@
+[project]
+name = "ai"
+version = "0.1.0"
+description = "AI workspace project"
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb>=1.2.0",
+    "fastmcp>=2.14.0",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
