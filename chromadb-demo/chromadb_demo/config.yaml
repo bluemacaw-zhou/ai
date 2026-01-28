@@ -1,0 +1,29 @@
+# ChromaDB Demo 配置文件
+# 复制此文件为 config.yaml 并填入真实配置
+
+# API 配置
+api:
+  zhipuai:
+    key: "e71d9c8828c94e648d13401121506910.LOiZtgiR1l7jCOlp"
+    proxy: "http://10.200.86.85:8080"
+    verify_ssl: false
+
+# 数据库配置
+database:
+  chromadb:
+    host: "10.106.51.218"
+    port: 8000
+    username: "admin"
+    password: "admin"
+
+# Embedding配置
+embedding:
+  provider: "zhipuai"
+  model: "embedding-2"
+  dimension: 1024
+
+# 集合配置
+collection:
+  name: "test_collection"
+  metadata:
+    description: "测试向量集合"
