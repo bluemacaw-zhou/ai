@@ -1,0 +1,29 @@
+[project]
+name = "rag-demo"
+version = "0.1.0"
+description = "RAG 演示 - 使用 LangChain / Qwen-Agent + ChromaDB + GLM Embedding + GLM-4"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # PDF 处理
+    "pypdf>=3.0.0",
+
+    # LangChain 核心
+    "langchain>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+
+    # Qwen-Agent
+    "qwen-agent>=0.0.10",
+
+    # 共享工具库（包含 Config, Logger, ChromaDB, GLMEmbedding）
+    "ai-starter[all]",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+package = false
+
+[tool.uv.sources]
+ai-starter = { path = "../ai-starter", editable = true }
