@@ -1,0 +1,43 @@
+# LlamaIndex RAG Pipeline 配置文件
+# 请将此文件复制为 config.yaml 并填写实际配置
+
+# ==================== LlamaIndex 配置 ====================
+llama:
+  # 文档数据路径
+  data_path: "./data"
+
+  # 是否重建知识库（true: 重新构建, false: 从现有 collection 加载）
+  build_knowledge_base: true
+
+  # 文档分割配置
+  chunk_size: 512          # 文本块大小
+  chunk_overlap: 200       # 文本块重叠大小
+
+  # 检索配置
+  similarity_top_k: 5      # 检索召回 top k 结果
+  num_queries: 3           # RAG Fusion 生成的查询数量
+
+  # Rerank 配置
+  rerank_top_n: 2          # Rerank 后保留的文档数
+  similarity_cutoff: 0.6   # 相似度过滤阈值（低于此分数的文档被过滤）
+
+# ==================== 智谱AI 配置 ====================
+api:
+  zhipuai:
+    key: "e71d9c8828c94e648d13401121506910.LOiZtgiR1l7jCOlp"
+    proxy: "http://10.200.86.85:8080"
+    verify_ssl: false
+    use_proxy: true  # 禁用系统代理，直接连接 ZhipuAI API
+
+# ==================== 模型配置 ====================
+models:
+  # LLM 配置
+  llm:
+    model: "glm-4-flash"     # 智谱AI 模型名称
+    temperature: 0.7         # 温度参数（可选）
+
+  # Embedding 配置
+  embedding:
+    model: "embedding-2"     # 智谱AI 嵌入模型名称
+
+
