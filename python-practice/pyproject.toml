@@ -1,0 +1,15 @@
+[project]
+name = "python-practice"
+version = "0.1.0"
+description = "Python 语法练习项目"
+requires-python = ">=3.12"
+dependencies = [
+    "ai-starter",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+package = false
+
+[tool.uv.sources]
+ai-starter = { path = "../ai-starter", editable = true }
