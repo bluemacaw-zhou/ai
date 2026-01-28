@@ -1,0 +1,31 @@
+[project]
+name = "llama-demo"
+version = "0.1.0"
+description = "LlamaIndex 框架学习 - 使用智谱AI + Qdrant"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # LlamaIndex 核心
+    "llama-index>=0.12.0",
+    "llama-index-core>=0.12.0",
+
+    # LlamaIndex 向量数据库集成
+    "llama-index-vector-stores-qdrant>=0.4.0",
+
+    # LlamaIndex OpenAI 兼容集成（用于智谱AI的OpenAI兼容接口）
+    "llama-index-llms-openai-like>=0.1.0",
+    "llama-index-embeddings-openai-like>=0.1.0",
+
+    # Qdrant 客户端
+    "qdrant-client>=1.7.0",
+
+    # 共享工具库（仅使用核心功能：Config, Logger, HttpClientFactory）
+    "ai-starter",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+package = false
+
+[tool.uv.sources]
+ai-starter = { path = "../ai-starter", editable = true }
