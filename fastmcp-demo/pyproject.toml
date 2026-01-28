@@ -1,0 +1,16 @@
+[project]
+name = "fastmcp-demo"
+version = "1.0.0"
+description = "FastMCP 两数相加服务演示"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=2.14.0",
+    "mcp>=1.24.0",
+    "uvicorn>=0.27.0",
+    "starlette>=0.36.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+package = false
