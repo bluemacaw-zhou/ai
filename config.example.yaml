@@ -1,0 +1,47 @@
+# AI Workspace 配置文件示例
+# 复制此文件为 config.yaml 并填入真实配置
+
+# API 配置
+api:
+  # 智谱AI配置
+  zhipuai:
+    key: "your_zhipuai_api_key_here"
+    base_url: "https://open.bigmodel.cn/api/paas/v4/"
+    proxy: "http://10.200.86.85:8080"
+    verify_ssl: false
+
+# 数据库配置
+database:
+  # ChromaDB配置
+  chromadb:
+    host: "10.106.51.218"
+    port: 8000
+    username: "admin"
+    password: "admin"
+    collection_name: "test_collection"  # 向量集合名称
+
+# 模型配置
+models:
+  # LLM模型配置
+  llm:
+    provider: "zhipuai"  # zhipuai, openai
+    model: "glm-4-flash"
+    temperature: 0.7
+    max_tokens: 2000
+
+  # Embedding模型配置
+  embedding:
+    provider: "zhipuai"  # zhipuai, openai, huggingface
+    model: "embedding-2"  # embedding-2, embedding-3, text-embedding-ada-002
+    dimension: 1024
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/app.log"
+
+# 应用配置
+app:
+  name: "AI Workspace"
+  version: "0.1.0"
+  debug: false
