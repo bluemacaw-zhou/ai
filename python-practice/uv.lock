@@ -1,0 +1,19 @@
+version = 1
+revision = 3
+requires-python = ">=3.12"
+
+[[package]]
+name = "python-practice"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "ai-starter" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "ai-starter", editable = "../ai-starter" }]
+
+[[package]]
+name = "ai-starter"
+version = "0.1.0.dev0"
+source = { editable = "../ai-starter" }
