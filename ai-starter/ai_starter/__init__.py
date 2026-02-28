@@ -26,7 +26,19 @@ from ai_starter.core.log.logging_utils import (
     with_trace,
 )
 from ai_starter.core.config.config import Config, load_config
-from ai_starter.core.http_client.http_client_factory import HttpClientFactory
+from ai_starter.http_client.http_client_factory import HttpClientFactory
+
+# ZhipuAI integration (optional dependency)
+try:
+    from ai_starter.zhipu import (
+        ZhipuLLMFactory,
+        ZhipuEmbeddingFactory,
+        ZhipuGlobalSettings,
+    )
+except Exception:
+    ZhipuLLMFactory = None
+    ZhipuEmbeddingFactory = None
+    ZhipuGlobalSettings = None
 
 # 可选依赖模块（使用 try-except 避免导入错误）
 try:
@@ -86,6 +98,10 @@ __all__ = [
     "Config",
     "load_config",
     "HttpClientFactory",
+    # ZhipuAI 集成
+    "ZhipuLLMFactory",
+    "ZhipuEmbeddingFactory",
+    "ZhipuGlobalSettings",
     # 可选依赖模块
     "ChromaDB",
     "EmbeddingInterface",
