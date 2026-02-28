@@ -31,17 +31,19 @@ class Config:
         """
         手动加载配置文件
 
-        从当前工作目录按顺序查找配置文件：
-        1. config.yaml
-        2. config.yml
-        3. config.json
-        4. config.toml
+        查找逻辑：
+        1. 从当前目录开始，向上查找 pyproject.toml 所在的目录（项目根目录）
+        2. 从项目根目录按顺序查找配置文件：
+           - config.yaml
+           - config.yml
+           - config.json
+           - config.toml
 
         Returns:
             Config实例（支持链式调用）
 
         Raises:
-            FileNotFoundError: 当前目录下找不到任何配置文件
+            FileNotFoundError: 找不到 pyproject.toml 或配置文件
 
         Note:
             通常不需要手动调用此方法，配置会在第一次访问时自动加载。
@@ -59,14 +61,24 @@ class Config:
             # logger.debug("配置已加载，跳过重复加载")
             return config
 
+        # 查找项目根目录
+        project_root = cls._find_project_root()
+        if project_root is None:
+            raise FileNotFoundError(
+                "找不到项目根目录。请确保在包含 pyproject.toml 的项目目录中运行。\n"
+                f"当前工作目录: {os.getcwd()}"
+            )
+
+        # 查找配置文件
         config_file = cls._find_config_file()
         if config_file is None:
             raise FileNotFoundError(
-                "配置文件未找到。请确保当前目录下有以下任一文件：\n"
+                f"配置文件未找到。请在项目根目录创建以下任一文件：\n"
                 "  - config.yaml\n"
                 "  - config.yml\n"
                 "  - config.json\n"
                 "  - config.toml\n"
+                f"项目根目录: {project_root}\n"
                 f"当前工作目录: {os.getcwd()}"
             )
 
@@ -116,17 +128,43 @@ class Config:
         return self
 
     @classmethod
+    def _find_project_root(cls) -> Optional[Path]:
+        """
+        查找项目根目录（通过 pyproject.toml 标识）
+
+        从当前工作目录开始，向上递归查找，直到找到第一个包含 pyproject.toml 的目录。
+
+        Returns:
+            项目根目录路径，未找到返回 None
+        """
+        current = Path.cwd().resolve()
+
+        # 向上查找，直到找到 pyproject.toml
+        for directory in [current] + list(current.parents):
+            if (directory / "pyproject.toml").exists():
+                return directory
+
+        return None
+
+    @classmethod
     def _find_config_file(cls) -> Optional[str]:
         """
-        从当前工作目录查找配置文件
+        查找配置文件
+
+        从当前目录开始向上查找 pyproject.toml 所在的目录（项目根目录），
+        然后从项目根目录查找配置文件。
 
         Returns:
             找到的配置文件路径，未找到返回 None
         """
-        current_dir = Path(os.getcwd()).resolve()
+        # 查找项目根目录
+        project_root = cls._find_project_root()
+        if not project_root:
+            return None
 
+        # 从项目根目录查找配置文件
         for config_name in cls._config_names:
-            config_path = current_dir / config_name
+            config_path = project_root / config_name
             if config_path.exists() and config_path.is_file():
                 return str(config_path)
 
@@ -188,7 +226,7 @@ class Config:
             配置值
 
         Examples:
-            >>> Config().get("api.zhipuai.key")
+            >>> Config().get("zhipu.api_key")
             >>> Config().get("database.port", 8000)
         """
         self._ensure_loaded()  # 懒加载
@@ -220,7 +258,7 @@ class Config:
             KeyError: 配置项不存在
 
         Examples:
-            >>> Config().get_required("api.zhipuai.key")
+            >>> Config().get_required("zhipu.api_key")
         """
         value = self.get(key)
         if value is None:
@@ -302,7 +340,10 @@ def load_config(config_file: str = None) -> Config:
 
 def find_config_file() -> Optional[str]:
     """
-    从当前工作目录查找配置文件（便捷函数）
+    从项目根目录查找配置文件（便捷函数）
+
+    从当前目录开始向上查找 pyproject.toml 所在的目录（项目根目录），
+    然后从项目根目录查找配置文件。
 
     Returns:
         找到的配置文件路径，未找到返回 None
