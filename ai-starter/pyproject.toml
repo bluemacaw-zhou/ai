@@ -27,6 +27,11 @@ langchain = [
     "langchain-text-splitters>=0.1.0",
     "pypdf>=4.0.0",
 ]
+llama-index = [
+    "llama-index-core>=0.10.0",
+    "llama-index-llms-openai-like>=0.1.0",
+    "llama-index-embeddings-openai-like>=0.1.0",
+]
 qwen-agent = [
     "qwen-agent[rag]",
 ]
@@ -38,6 +43,9 @@ all = [
     "langchain-community>=0.1.0",
     "langchain-text-splitters>=0.1.0",
     "pypdf>=4.0.0",
+    "llama-index-core>=0.10.0",
+    "llama-index-llms-openai-like>=0.1.0",
+    "llama-index-embeddings-openai-like>=0.1.0",
     "qwen-agent[rag]",
 ]
 
