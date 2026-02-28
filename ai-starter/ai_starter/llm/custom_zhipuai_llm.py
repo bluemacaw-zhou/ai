@@ -43,7 +43,7 @@ except ImportError:
 # 本地导入
 try:
     from ai_starter.core.log.logging_utils import get_logger
-    from ai_starter.core.http_client.http_client_factory import HttpClientFactory
+    from ai_starter.http_client.http_client_factory import HttpClientFactory
     from ai_starter.core.config.config import Config
     from .langchain_interface import LangChainChatModel
     from .qwen_agent_interface import QwenAgentLLM
@@ -110,18 +110,18 @@ class CustomChatZhipuAI(LangChainChatModel, QwenAgentLLM):
         config = Config()
 
         # 设置模型参数
-        kwargs['model'] = config.get("models.llm.model", "glm-4-flash")
-        kwargs['temperature'] = config.get("models.llm.temperature", 0.7)
+        kwargs['model'] = config.get("zhipu.llm.model") or config.get("models.llm.model", "glm-4-flash")
+        kwargs['temperature'] = config.get("zhipu.llm.temperature") or config.get("models.llm.temperature", 0.7)
 
         # 调用父类初始化（会初始化 LangChainChatModel，进而初始化 LangChain 的 BaseChatModel）
         super().__init__(**kwargs)
 
         # 读取 API 配置
-        self._api_key = config.get("api.zhipuai.key")
-        self._api_base = config.get("api.zhipuai.api_base", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
+        self._api_key = config.get("zhipu.api_key")
+        self._api_base = config.get("zhipu.api_base", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
 
         if not self._api_key:
-            raise ValueError("api_key is required. 请在配置文件中配置 api.zhipuai.key")
+            raise ValueError("api_key is required. 请在配置文件中配置 zhipu.api_key")
 
         # 创建自定义 http_client（自动从配置读取代理和 SSL 设置）
         self._http_client = HttpClientFactory.create()
