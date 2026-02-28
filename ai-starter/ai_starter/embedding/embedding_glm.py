@@ -3,7 +3,7 @@ from zhipuai import ZhipuAI
 from .embedding_interface import EmbeddingInterface
 from ai_starter.core.log.logging_utils import get_logger
 from ai_starter.core.config.config import Config
-from ai_starter.core.http_client.http_client_factory import HttpClientFactory
+from ai_starter.http_client.http_client_factory import HttpClientFactory
 
 logger = get_logger(__name__)
 
@@ -33,11 +33,11 @@ class GLMEmbedding(EmbeddingInterface):
         """
         config = Config()
 
-        self.api_key = api_key or config.get("api.zhipuai.key")
-        self.model = model or config.get("models.embedding.model") or config.get("embedding.model", "embedding-2")
+        self.api_key = api_key or config.get("zhipu.api_key")
+        self.model = model or config.get("zhipu.embedding.model") or config.get("models.embedding.model") or config.get("embedding.model", "embedding-2")
 
         if not self.api_key:
-            raise ValueError("api_key is required. 请在配置文件中配置 api.zhipuai.key，或通过参数传入。")
+            raise ValueError("api_key is required. 请在配置文件中配置 zhipu.api_key，或通过参数传入。")
 
         http_client = HttpClientFactory.create()
         self.client = ZhipuAI(api_key=self.api_key, http_client=http_client)
