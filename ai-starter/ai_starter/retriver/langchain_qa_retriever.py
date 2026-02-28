@@ -44,26 +44,17 @@ class LangchainQARetriever:
         for key in ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy']:
             os.environ.pop(key, None)
 
-        # 从配置读取 LLM 配置
+        # 从配置读取 LLM 配置（CustomChatZhipuAI 会自动从 Config 读取所有配置）
         config = Config()
-        api_key = config.get("api.zhipuai.key")
-        model = config.get("models.llm.model", "glm-4-flash")
-        verify_ssl = config.get("api.zhipuai.verify_ssl", False)
-        use_proxy = config.get("api.zhipuai.use_proxy", True)
+        api_key = config.get("zhipu.api_key")
 
         if not api_key:
-            raise ValueError("缺少 ZhipuAI API Key，请在配置文件中配置 api.zhipuai.key")
+            raise ValueError("缺少 ZhipuAI API Key，请在配置文件中配置 zhipu.api_key")
 
-        # 初始化自定义 LLM（支持代理环境和 SSL 验证配置）
-        logger.info(f"初始化 CustomChatZhipuAI (model={model}, verify_ssl={verify_ssl}, use_proxy={use_proxy})")
+        # 初始化自定义 LLM（所有配置从 Config 读取）
+        logger.info("初始化 CustomChatZhipuAI（配置从 config.yaml 读取）")
 
-        self.llm = CustomChatZhipuAI(
-            api_key=api_key,
-            model=model,
-            temperature=temperature,
-            verify_ssl=verify_ssl,
-            use_proxy=use_proxy
-        )
+        self.llm = CustomChatZhipuAI()
 
         # 创建 RAG 链 (使用 LCEL)
         self.qa_chain = (
