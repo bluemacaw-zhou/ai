@@ -1,9 +1,7 @@
 from typing import List
 from zhipuai import ZhipuAI
-from .embedding_interface import EmbeddingInterface
-from ai_starter.core.log.logging_utils import get_logger
-from ai_starter.core.config.config import Config
-from ai_starter.http_client.http_client_factory import HttpClientFactory
+from ai_starter.embedding.embedding_interface import EmbeddingInterface
+from ai_starter import get_logger, Config, HttpClientFactory
 
 logger = get_logger(__name__)
 
