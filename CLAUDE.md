@@ -242,7 +242,14 @@ ai-starter = { path = "../ai-starter", editable = true }
 
 1. **⚠️ Proxy Environment**: NEVER execute `pip`, `uv`, `curl` in Claude Code terminal. Tell user to run commands in their terminal due to proxy issues.
 
-2. **⚠️ No Unsolicited Documentation**: DO NOT create README, docs, or comments unless explicitly requested. Focus on functional code only.
+2. **⚠️ No Unsolicited Documentation**: DO NOT create or modify documentation files (.md) or test cases unless explicitly requested by the user. This includes:
+   - README files
+   - Technical documentation
+   - Change logs or improvement summaries
+   - API documentation
+   - Architecture diagrams
+   - Test cases or examples for updated code
+   Focus on functional code only. Only create documentation or test cases when the user explicitly asks for it.
 
 3. **⚠️ No print() Statements**: NEVER use `print()` for logging. ALWAYS use `get_logger()` from `ai_starter`:
    ```python
