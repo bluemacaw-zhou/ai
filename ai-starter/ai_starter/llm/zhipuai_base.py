@@ -11,7 +11,8 @@ ZhipuAI HTTP API 调用的公共基类
 import httpx
 import time
 import jwt
-from typing import Dict, List, Optional
+import json
+from typing import Dict, List, Optional, Iterator
 from ai_starter.core.log.logging_utils import get_logger
 from ai_starter.http_client.http_client_factory import HttpClientFactory
 from ai_starter.core.config.config import Config
@@ -167,6 +168,85 @@ class ZhipuAIBase:
             raise
         except Exception as e:
             logger.error(f"API 调用异常: {e}")
+            raise
+
+    def _call_api_stream(
+        self,
+        messages: List[Dict],
+        timeout: Optional[int] = None,
+        **kwargs
+    ) -> Iterator[str]:
+        """
+        调用 ZhipuAI API（流式）
+
+        Args:
+            messages: 消息列表，格式：[{"role": "user", "content": "..."}]
+            timeout: 超时时间（秒）
+            **kwargs: 其他 API 参数
+
+        Yields:
+            流式响应的文本片段
+        """
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": kwargs.get("temperature", self._temperature),
+            "stream": True,
+            **{k: v for k, v in kwargs.items() if k not in ("temperature", "stream")}
+        }
+
+        headers = {
+            "Authorization": self._get_jwt_token(self._api_key),
+            "Accept": "text/event-stream",
+            "Content-Type": "application/json"
+        }
+
+        logger.info(f"调用 ZhipuAI API（流式）: {self._api_base}")
+
+        try:
+            with self._http_client.stream(
+                "POST",
+                self._api_base,
+                json=payload,
+                headers=headers,
+                timeout=timeout or 60
+            ) as response:
+                response.raise_for_status()
+
+                for line in response.iter_lines():
+                    if not line or not line.strip():
+                        continue
+
+                    # 跳过注释行
+                    if line.startswith(":"):
+                        continue
+
+                    # 解析 SSE 格式: "data: {...}"
+                    if line.startswith("data:"):
+                        data_str = line[5:].strip()
+
+                        # 流结束标志
+                        if data_str == "[DONE]":
+                            break
+
+                        try:
+                            data = json.loads(data_str)
+                            # 提取 delta content
+                            delta = data.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+
+                            if content:
+                                yield content
+
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"解析流式响应失败: {e}, line: {line}")
+                            continue
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"流式 API 调用失败: {e.response.status_code} - {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"流式 API 调用异常: {e}")
             raise
 
     def __del__(self):

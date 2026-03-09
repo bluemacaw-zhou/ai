@@ -1,6 +1,6 @@
 from typing import List
-from .embedding_interface import EmbeddingInterface
-from ai_starter.core.log.logging_utils import get_logger
+from ai_starter.embedding.embedding_interface import EmbeddingInterface
+from ai_starter import get_logger
 
 logger = get_logger(__name__)
 
