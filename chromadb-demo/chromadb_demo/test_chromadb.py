@@ -1,6 +1,5 @@
 """ChromaDB 向量数据库测试"""
 
-from typing import Dict, Any
 import numpy as np
 from ai_starter import get_logger, Config
 from ai_starter.chromadb import ChromaDB
