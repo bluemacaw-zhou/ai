@@ -145,7 +145,6 @@ env.bak/
 venv.bak/
 
 # Configuration files with secrets
-config.yaml
 config.json
 config.toml
 

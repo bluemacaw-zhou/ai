@@ -21,7 +21,7 @@ http:
 # ==================== 智谱AI 配置 ====================
 zhipu:
   # API Base URL（必填）
-  api_base: "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+  api_base: "https://open.bigmodel.cn/api/paas/v4/"
 
   # LLM 配置
   llm:
@@ -30,7 +30,7 @@ zhipu:
 
   # Embedding 配置
   embedding:
-    model: "embedding-3"                   # 嵌入模型名称
+    model: "embedding-2"                   # 嵌入模型名称
 
 # ==================== ChromaDB 配置 ====================
 chromadb:

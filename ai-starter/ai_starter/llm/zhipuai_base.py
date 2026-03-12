@@ -51,8 +51,8 @@ class ZhipuAIBase:
         if not self._api_key:
             raise ValueError("环境变量 ZHIPUAI_API_KEY 未设置，请先设置后再运行")
 
-        # API Base URL 从配置读取（必须显式配置）
-        self._api_base = config.get_required("zhipu.api_base")
+        # API Base URL 从配置读取，ZhipuAIBase 直接调用 chat/completions 端点
+        self._api_base = config.get_required("zhipu.api_base").rstrip("/") + "/chat/completions"
 
         # 创建自定义 http_client（自动从配置读取代理和 SSL 设置）
         self._http_client = HttpClientFactory.create()

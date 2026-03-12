@@ -1,6 +1,7 @@
 """Text-to-SQL Workflow utilities."""
 from llama_index.core.llms import LLM
-from ai_starter import get_logger, ZhipuLLMFactory
+from ai_starter import get_logger
+from ai_starter.llama_index import ZhipuLLMFactory
 
 # 支持两种导入方式：相对导入（作为模块导入时）和绝对导入（直接运行时）
 from workflow_demo.utils.text2sql_workflow_impl import Text2SQLWorkflowImpl

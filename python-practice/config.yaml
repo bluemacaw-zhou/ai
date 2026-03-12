@@ -1,0 +1,33 @@
+# python-practice 配置
+# API Key 请设置环境变量：export ZHIPUAI_API_KEY="your_api_key_here"
+
+# ==================== HTTP 客户端配置 ====================
+http:
+  proxy:
+    enabled: true
+    http: "http://10.200.86.85:8080"
+    https: "http://10.200.86.85:8080"
+  timeout: 30
+  verify_ssl: false
+
+# ==================== 智谱AI 配置 ====================
+zhipu:
+  api_base: "https://open.bigmodel.cn/api/paas/v4/"
+  llm:
+    model: "glm-4-flash"
+    temperature: 0.7
+  embedding:
+    model: "embedding-2"
+
+# ==================== ChromaDB 配置 ====================
+chromadb:
+  host: "localhost"
+  port: 8000
+  username: "admin"
+  password: "admin"
+  collection_name: "test_collection"
+
+# ==================== 日志配置 ====================
+logging:
+  level: "INFO"
+  file: "logs/app.log"

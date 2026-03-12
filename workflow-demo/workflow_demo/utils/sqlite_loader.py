@@ -31,6 +31,7 @@ class SQLiteLoader:
             self.db_path = db_path
         else:
             self.db_path = Path(db_path)
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # 启用 WAL 模式支持并发读写
         self.engine = create_engine(

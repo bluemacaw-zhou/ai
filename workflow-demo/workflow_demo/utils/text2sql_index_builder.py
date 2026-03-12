@@ -10,7 +10,8 @@ from llama_index.core.objects import (
 from llama_index.core.retrievers import SQLRetriever
 from llama_index.core.prompts.default_prompts import DEFAULT_TEXT_TO_SQL_PROMPT
 from llama_index.core.llms import ChatResponse
-from ai_starter import get_logger, ZhipuGlobalSettings
+from ai_starter import get_logger
+from ai_starter.llama_index import ZhipuGlobalSettings
 
 # 支持两种导入方式：相对导入（作为模块导入时）和绝对导入（直接运行时）
 try:

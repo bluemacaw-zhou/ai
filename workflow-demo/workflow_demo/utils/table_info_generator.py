@@ -5,7 +5,8 @@ from llama_index.core.prompts import ChatPromptTemplate
 from llama_index.core.llms import ChatMessage
 from llama_index.core.llms import LLM
 import pandas as pd
-from ai_starter import get_logger, ZhipuLLMFactory
+from ai_starter import get_logger
+from ai_starter.llama_index import ZhipuLLMFactory
 from workflow_demo.model import TableInfo
 
 logger = get_logger(__name__)

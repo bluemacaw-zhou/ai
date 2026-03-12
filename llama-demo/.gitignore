@@ -19,8 +19,6 @@ ENV/
 *.swp
 *.swo
 
-# Configuration (contains secrets)
-config.yaml
 
 # Data
 data/

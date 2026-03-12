@@ -49,11 +49,13 @@ requires-dist = [
     { name = "qwen-agent", extras = ["rag"], marker = "extra == 'all'" },
     { name = "qwen-agent", extras = ["rag"], marker = "extra == 'qwen-agent'" },
     { name = "sniffio", marker = "extra == 'all'", specifier = ">=1.3.0" },
+    { name = "sniffio", marker = "extra == 'chromadb'", specifier = ">=1.3.0" },
     { name = "sniffio", marker = "extra == 'embedding'", specifier = ">=1.3.0" },
     { name = "zhipuai", marker = "extra == 'all'", specifier = ">=2.1.0" },
+    { name = "zhipuai", marker = "extra == 'chromadb'", specifier = ">=2.1.0" },
     { name = "zhipuai", marker = "extra == 'embedding'", specifier = ">=2.1.0" },
 ]
-provides-extras = ["chromadb", "embedding", "langchain", "llama-index", "qwen-agent", "all"]
+provides-extras = ["embedding", "chromadb", "langchain", "llama-index", "qwen-agent", "all"]
 
 [[package]]
 name = "aiohappyeyeballs"
