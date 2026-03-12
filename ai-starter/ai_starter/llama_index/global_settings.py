@@ -16,21 +16,17 @@ class ZhipuGlobalSettings:
     def setup(
         llm_model: str | None = None,
         embedding_model: str | None = None,
-        api_key: str | None = None,
         api_base: str | None = None,
     ) -> tuple[OpenAILike, OpenAILikeEmbedding]:
         """Setup global LLM and Embedding settings for LlamaIndex.
 
-        This method creates LLM and Embedding instances and configures them
-        in Settings.llm and Settings.embed_model for global use in LlamaIndex.
-
-        All configurations are read from config.yaml.
-        Priority: parameter > config.yaml > default value
+        API key is read from ZHIPUAI_API_KEY environment variable.
+        Other configurations are read from config.yaml.
+        Priority: parameter > config.yaml
 
         Config structure:
             zhipu:
-              api_key: "your_api_key"
-              api_base: "https://open.bigmodel.cn/api/paas/v4/"  # optional
+              api_base: "https://open.bigmodel.cn/api/paas/v4/"
               llm:
                 model: "glm-4-flash"
               embedding:
@@ -39,28 +35,21 @@ class ZhipuGlobalSettings:
         Args:
             llm_model: LLM model name. If None, reads from config.yaml.
             embedding_model: Embedding model name. If None, reads from config.yaml.
-            api_key: API key. If None, reads from config.yaml.
             api_base: API base URL. If None, reads from config.yaml.
 
         Returns:
             Tuple of (llm, embed_model).
 
         Raises:
-            ValueError: If api_key is not provided in config or parameter.
+            ValueError: If ZHIPUAI_API_KEY env var is not set.
+            KeyError: If required config keys are missing.
 
         Examples:
-            >>> # Use config.yaml
             >>> llm, embedding = ZhipuGlobalSettings.setup()
-            >>>
-            >>> # Override specific parameters
-            >>> llm, embedding = ZhipuGlobalSettings.setup(
-            ...     llm_model="glm-4-plus",
-            ...     embedding_model="embedding-2"
-            ... )
+            >>> llm, embedding = ZhipuGlobalSettings.setup(llm_model="glm-4-plus")
         """
-        # Reuse factory methods to avoid code duplication
-        Settings.llm = ZhipuLLMFactory.create(llm_model, api_key, api_base)
-        Settings.embed_model = ZhipuEmbeddingFactory.create(embedding_model, api_key, api_base)
+        Settings.llm = ZhipuLLMFactory.create(llm_model, api_base)
+        Settings.embed_model = ZhipuEmbeddingFactory.create(embedding_model, api_base)
 
         logger.info("✓ 智谱AI 全局设置配置完成")
 

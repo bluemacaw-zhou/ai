@@ -41,10 +41,10 @@ class ChromaDB:
         """
         config = Config()
 
-        self.host = host or config.get("chromadb.host", "localhost")
-        self.port = port or config.get("chromadb.port", 8000)
-        self.username = username or config.get("chromadb.username", "admin")
-        self.password = password or config.get("chromadb.password", "admin")
+        self.host = host or config.get_required("chromadb.host")
+        self.port = port or config.get_required("chromadb.port")
+        self.username = username if username is not None else config.get_required("chromadb.username")
+        self.password = password if password is not None else config.get_required("chromadb.password")
 
         os.environ['NO_PROXY'] = self.host
         os.environ.pop('HTTP_PROXY', None)

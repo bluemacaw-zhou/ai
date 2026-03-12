@@ -43,15 +43,15 @@ class HttpClientFactory:
         """
         config = Config()
 
-        # 从 http: 节点读取配置
-        verify_ssl = config.get("http.verify_ssl", True)
-        proxy_enabled = config.get("http.proxy.enabled", False)
-        timeout = config.get("http.timeout", 60.0)
+        # 从 http: 节点读取配置（必须显式配置，不使用默认值）
+        verify_ssl = config.get_required("http.verify_ssl")
+        proxy_enabled = config.get_required("http.proxy.enabled")
+        timeout = config.get_required("http.timeout")
 
         if proxy_enabled:
             # 读取代理配置
-            http_proxy = config.get("http.proxy.http")
-            https_proxy = config.get("http.proxy.https")
+            http_proxy = config.get_required("http.proxy.http")
+            https_proxy = config.get_required("http.proxy.https")
 
             # 构建代理配置（httpx 使用单数 proxy，不是 proxies）
             # 如果 http 和 https 代理相同，使用字符串；否则使用字典

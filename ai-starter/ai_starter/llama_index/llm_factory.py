@@ -1,4 +1,5 @@
 """ZhipuAI LLM Factory"""
+import os
 from llama_index.llms.openai_like import OpenAILike
 from ai_starter.core.config.config import Config
 from ai_starter.core.log.logging_utils import get_logger
@@ -13,51 +14,45 @@ class ZhipuLLMFactory:
     @staticmethod
     def create(
         model: str | None = None,
-        api_key: str | None = None,
         api_base: str | None = None,
     ) -> OpenAILike:
         """Create ZhipuAI LLM instance.
 
-        All configurations are read from config.yaml.
-        Priority: parameter > config.yaml > default value
+        API key is read from ZHIPUAI_API_KEY environment variable.
+        Other configurations are read from config.yaml.
+        Priority: parameter > config.yaml
 
         Config structure:
             zhipu:
-              api_key: "your_api_key"
-              api_base: "https://open.bigmodel.cn/api/paas/v4/"  # optional
+              api_base: "https://open.bigmodel.cn/api/paas/v4/"
               llm:
                 model: "glm-4-flash"
 
         Args:
             model: Model name. If None, reads from config.yaml.
-            api_key: API key. If None, reads from config.yaml.
             api_base: API base URL. If None, reads from config.yaml.
 
         Returns:
             OpenAILike LLM instance.
 
         Raises:
-            ValueError: If api_key is not provided in config or parameter.
+            ValueError: If ZHIPUAI_API_KEY env var is not set.
+            KeyError: If required config keys are missing.
 
         Examples:
-            >>> # Use config.yaml
             >>> llm = ZhipuLLMFactory.create()
-            >>>
-            >>> # Override specific parameter
             >>> llm = ZhipuLLMFactory.create(model="glm-4-plus")
         """
         config = Config()
 
-        # Priority: parameter > config > default
-        model = model or config.get("zhipu.llm.model", "glm-4-flash")
-        api_key = api_key or config.get("zhipu.api_key")
-        api_base = api_base or config.get("zhipu.api_base", "https://open.bigmodel.cn/api/paas/v4/")
-
+        # API Key 从环境变量读取
+        api_key = os.environ.get("ZHIPUAI_API_KEY")
         if not api_key:
-            raise ValueError(
-                "api_key is required. Please set zhipu.api_key in config.yaml "
-                "or pass api_key parameter."
-            )
+            raise ValueError("环境变量 ZHIPUAI_API_KEY 未设置，请先设置后再运行")
+
+        # 其他配置必须在 config.yaml 中显式配置
+        model = model or config.get_required("zhipu.llm.model")
+        api_base = api_base or config.get_required("zhipu.api_base")
 
         # Create HTTP client (automatically reads from http: config)
         http_client = HttpClientFactory.create()

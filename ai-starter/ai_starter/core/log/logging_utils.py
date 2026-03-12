@@ -69,11 +69,11 @@ def get_logger(
     # 从全局配置读取，参数可覆盖（懒加载）
     config = Config()
 
-    # 确定日志级别：参数 > 配置 > 默认值
-    level = level or config.get("logging.level", "INFO")
+    # 确定日志级别：参数 > 配置
+    level = level or config.get_required("logging.level")
 
     # 确定日志文件：参数 > 配置
-    log_file = log_file or config.get("logging.file")
+    log_file = log_file or config.get_required("logging.file")
 
     # 硬编码日志格式（固定包含链路追踪和线程信息）
     format_str = "%(asctime)s - [%(trace_id)s] - %(levelname)-5s - [%(threadName)s] - %(filename)s:%(funcName)s:%(lineno)d - %(message)s"
@@ -129,8 +129,8 @@ def setup_logging_from_config() -> None:
     # 从全局配置读取（懒加载）
     config = Config()
 
-    level = config.get("logging.level", "INFO")
-    log_file = config.get("logging.file")
+    level = config.get_required("logging.level")
+    log_file = config.get_required("logging.file")
 
     # 硬编码日志格式（固定包含链路追踪和线程信息）
     format_str = "%(asctime)s - [%(trace_id)s] - %(levelname)-5s - [%(threadName)s] - %(filename)s:%(funcName)s:%(lineno)d - %(message)s"

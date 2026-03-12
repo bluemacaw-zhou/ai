@@ -22,7 +22,7 @@ class LangchainChromadb:
             embeddings: LangChain Embeddings 实例
         """
         config = Config()
-        self.collection_name = config.get("chromadb.collection_name", "test_collection")
+        self.collection_name = config.get_required("chromadb.collection_name")
 
         self.embeddings = embeddings
         self.chroma_client = ChromaDB()

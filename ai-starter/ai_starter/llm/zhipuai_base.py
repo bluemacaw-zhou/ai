@@ -8,6 +8,7 @@ ZhipuAI HTTP API 调用的公共基类
 - API 调用封装
 """
 
+import os
 import httpx
 import time
 import jwt
@@ -35,24 +36,23 @@ class ZhipuAIBase:
         初始化 ZhipuAI 基类
 
         Args:
-            model: 模型名称（可选，默认从配置读取）
-            temperature: 温度参数（可选，默认从配置读取）
+            model: 模型名称（可选，从配置读取）
+            temperature: 温度参数（可选，从配置读取）
         """
         # 从 Config 读取所有配置
         config = Config()
 
-        # 设置模型参数
-        self._model = model or config.get("zhipu.llm.model") or config.get("models.llm.model", "glm-4-flash")
-        self._temperature = temperature if temperature is not None else (
-            config.get("zhipu.llm.temperature") or config.get("models.llm.temperature", 0.7)
-        )
+        # 设置模型参数（必须在配置中存在）
+        self._model = model or config.get_required("zhipu.llm.model")
+        self._temperature = temperature if temperature is not None else config.get_required("zhipu.llm.temperature")
 
-        # 读取 API 配置
-        self._api_key = config.get("zhipu.api_key")
-        self._api_base = config.get("zhipu.api_base", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
-
+        # API Key 从环境变量读取
+        self._api_key = os.environ.get("ZHIPUAI_API_KEY")
         if not self._api_key:
-            raise ValueError("api_key is required. 请在配置文件中配置 zhipu.api_key")
+            raise ValueError("环境变量 ZHIPUAI_API_KEY 未设置，请先设置后再运行")
+
+        # API Base URL 从配置读取（必须显式配置）
+        self._api_base = config.get_required("zhipu.api_base")
 
         # 创建自定义 http_client（自动从配置读取代理和 SSL 设置）
         self._http_client = HttpClientFactory.create()

@@ -1,3 +1,4 @@
+import os
 from typing import List
 from zhipuai import ZhipuAI
 from ai_starter.embedding.embedding_interface import EmbeddingInterface
@@ -16,26 +17,27 @@ class GLMEmbedding(EmbeddingInterface):
 
     def __init__(
         self,
-        api_key: str = None,
         model: str = None
     ):
         """
         初始化 GLM Embedding 服务
 
+        API Key 从环境变量 ZHIPUAI_API_KEY 读取。
+
         Args:
-            api_key: 智谱 AI API 密钥（可选，覆盖配置文件）
-            model: 模型名称，可选 "embedding-2" 或 "embedding-3"（可选，覆盖配置文件）
+            model: 模型名称，可选 "embedding-2" 或 "embedding-3"（可选，从配置读取）
 
         Raises:
-            ValueError: 如果无法获取 api_key
+            ValueError: 如果环境变量 ZHIPUAI_API_KEY 未设置
         """
         config = Config()
 
-        self.api_key = api_key or config.get("zhipu.api_key")
-        self.model = model or config.get("zhipu.embedding.model") or config.get("models.embedding.model") or config.get("embedding.model", "embedding-2")
-
+        # API Key 从环境变量读取
+        self.api_key = os.environ.get("ZHIPUAI_API_KEY")
         if not self.api_key:
-            raise ValueError("api_key is required. 请在配置文件中配置 zhipu.api_key，或通过参数传入。")
+            raise ValueError("环境变量 ZHIPUAI_API_KEY 未设置，请先设置后再运行")
+
+        self.model = model or config.get_required("zhipu.embedding.model")
 
         http_client = HttpClientFactory.create()
         self.client = ZhipuAI(api_key=self.api_key, http_client=http_client)
