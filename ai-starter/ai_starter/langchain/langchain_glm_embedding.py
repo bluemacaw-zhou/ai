@@ -34,14 +34,12 @@ class LangChainGLMEmbedding(LangChainEmbeddings, EmbeddingInterface):
 
     def __init__(
         self,
-        api_key: str = None,
         model: str = None
     ):
         """
         初始化 LangChain GLM Embedding 适配器
 
         Args:
-            api_key: 智谱 AI API 密钥（可选，自动从配置读取）
             model: 模型名称（可选，自动从配置读取）
 
         Examples:
@@ -55,7 +53,6 @@ class LangChainGLMEmbedding(LangChainEmbeddings, EmbeddingInterface):
             >>> query_vector = embedding.embed_query("查询文本")
         """
         self.glm_embedding = GLMEmbedding(
-            api_key=api_key,
             model=model
         )
         logger.info("LangChainGLMEmbedding initialized")

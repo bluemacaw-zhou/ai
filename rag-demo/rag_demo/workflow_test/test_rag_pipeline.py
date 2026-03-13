@@ -11,7 +11,7 @@
 from pathlib import Path
 from ai_starter import Config, get_logger
 from ai_starter.langchain import PDFChunker, LangChainGLMEmbedding, LangchainChromadb
-from rag_demo.retriever.langchain_qa_retriever import LangchainQARetriever
+from ..retriever.langchain_qa_retriever import LangchainQARetriever
 
 logger = get_logger(__name__)
 

@@ -4,7 +4,7 @@ LangChain ChromaDB 向量存储组件
 
 from typing import List, Optional
 from langchain_community.vectorstores import Chroma
-from ai_starter.chromadb.chromadb import ChromaDB
+from ai_starter.chromadb import ChromaDB
 from ai_starter.core.config.config import Config
 from ai_starter.core.log.logging_utils import get_logger
 

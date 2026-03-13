@@ -50,7 +50,7 @@ class LangchainQARetriever:
             | StrOutputParser()
         )
 
-        logger.info("LangchainQARetriever initialized (temperature={self.llm._zhipu.temperature})")
+        logger.info(f"LangchainQARetriever initialized (temperature={self.llm._zhipu.temperature})")
 
     def _format_docs(self, docs):
         """格式化文档为上下文字符串"""

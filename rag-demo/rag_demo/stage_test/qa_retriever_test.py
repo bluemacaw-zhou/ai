@@ -4,7 +4,7 @@ Step 4: 问答检索测试
 
 from ai_starter import get_logger
 from ai_starter.langchain import LangChainGLMEmbedding, LangchainChromadb
-from rag_demo.retriever.langchain_qa_retriever import LangchainQARetriever
+from ..retriever.langchain_qa_retriever import LangchainQARetriever
 
 logger = get_logger(__name__)
 

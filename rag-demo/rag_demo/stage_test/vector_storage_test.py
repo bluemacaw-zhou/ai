@@ -19,6 +19,7 @@ def main():
 
     # 创建向量存储
     storage = LangchainChromadb(embeddings=embeddings)
+    storage.clear_collection()
 
     # 示例文本块
     texts = [

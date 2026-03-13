@@ -1,6 +1,3 @@
-import logging
-from tempfile import template
-
 from ai_starter.langchain import LangChainChatZhipuAI
 from ai_starter import get_logger
 from langchain_core.messages import (
@@ -9,7 +6,7 @@ from langchain_core.messages import (
     SystemMessage  # 等价于OpenAI接口中的system role
 )
 
-from rag_demo.model import Date
+from ..model import Date
 
 from langchain_core.prompts import (
     PromptTemplate,
@@ -40,7 +37,7 @@ def multi_turn_test(chat_model: LangChainChatZhipuAI):
 
     # 流式输出
     for token in chat_model.stream("你是谁"):
-        print(token.content, end="")
+        logger.info(token.content)
 
 def single_turn_prompt_test(chat_model: LangChainChatZhipuAI):
     template = PromptTemplate.from_template("给我讲个关于{subject}的笑话")
@@ -58,7 +55,7 @@ def multi_turn_prompt_test(chat_model: LangChainChatZhipuAI):
     )
 
     prompt = template.format_messages(company="京东", name="东子", query="你是谁")
-    logging.info(prompt)
+    logger.info(prompt)
     response = chat_model.invoke(prompt)
     logger.info(response.content)
 
