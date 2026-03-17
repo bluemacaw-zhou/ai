@@ -21,11 +21,11 @@ zhipu:
 
 # ==================== ChromaDB 配置 ====================
 chromadb:
-  host: "localhost"
+  host: 10.106.51.218
   port: 8000
-  username: "admin"
-  password: "admin"
-  collection_name: "test_collection"
+  username: admin
+  password: admin
+  collection_name: "rag_collection"
 
 # ==================== 日志配置 ====================
 logging:

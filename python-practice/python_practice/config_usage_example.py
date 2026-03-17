@@ -4,11 +4,7 @@ Config使用示例
 演示如何使用Config类加载配置并初始化各种组件
 """
 
-from ai_starter import (
-    Config,
-    ChromaDB,
-    GLMEmbedding
-)
+from ai_starter import Config
 
 
 def example_auto_load():
@@ -32,6 +28,9 @@ def example_components():
     """组件自动读取配置"""
     print("=== 示例2: 组件自动读取配置 ===\n")
 
+    from ai_starter.chromadb import ChromaDB
+    from ai_starter.embedding import GLMEmbedding
+
     # 直接创建，组件内部会自动加载配置（懒加载）
     # 不需要手动调用 Config.load()
     db = ChromaDB()
@@ -46,6 +45,8 @@ def example_components():
 def example_override_config():
     """覆盖配置文件中的值"""
     print("=== 示例3: 覆盖配置 ===\n")
+
+    from ai_starter.embedding import GLMEmbedding
 
     # 覆盖配置文件中的 model 参数
     # 参数优先级：函数参数 > 配置文件 > 默认值

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Python 语法练习项目"
 requires-python = ">=3.12"
 dependencies = [
-    "ai-starter",
+    "ai-starter[chromadb,embedding]",
 ]
 
 [tool.uv]
