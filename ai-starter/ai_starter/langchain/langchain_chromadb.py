@@ -45,7 +45,7 @@ class LangchainChromadb:
         注意：这会删除集合中的所有文档
         """
         try:
-            self.chroma_client.delete_collection(self.collection_name)
+            self.chroma_client.delete(self.collection_name)
             logger.info(f"已清空集合: {self.collection_name}")
 
             # 重新初始化 vectorstore（连接到新的空 collection）

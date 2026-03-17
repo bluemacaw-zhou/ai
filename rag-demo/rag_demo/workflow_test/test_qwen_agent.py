@@ -20,6 +20,7 @@ Qwen-Agent RAG 流程测试
 - 自动从配置文件读取代理和 SSL 设置
 """
 
+import shutil
 from pathlib import Path
 from qwen_agent.agents import Assistant
 from ai_starter import Config, get_logger
@@ -59,6 +60,12 @@ class QwenAgentPipeline:
         - 文本向量化（embedding）
         - 向量存储和检索
         """
+        # 清空 Qwen-Agent 本地工作空间
+        workspace_dir = Path(__file__).parent.parent.parent / "workspace"
+        if workspace_dir.exists():
+            shutil.rmtree(workspace_dir)
+            logger.info(f"已清空本地工作空间: {workspace_dir}")
+
         if not self.pdf_path.exists():
             logger.error(f"PDF 文件不存在: {self.pdf_path}")
             raise FileNotFoundError(f"请将 PDF 文件放在: {self.pdf_path}")

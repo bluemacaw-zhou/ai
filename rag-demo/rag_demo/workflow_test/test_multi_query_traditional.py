@@ -97,18 +97,25 @@ def main():
     # llm_chain 会返回包含查询列表的字典
     response = multi_query_retriever.llm_chain.invoke({"question": question})
     # 解析返回的查询列表（通常在 'lines' 或 'text' 字段中）
-    if isinstance(response, dict):
+    if isinstance(response, list):
+        raw = response
+    elif isinstance(response, dict):
         if 'lines' in response:
-            generated_queries = response['lines']
+            raw = response['lines']
         elif 'text' in response:
-            # 如果返回的是文本，按行分割
-            generated_queries = [line.strip() for line in response['text'].strip().split('\n') if line.strip()]
+            raw = [line.strip() for line in response['text'].strip().split('\n') if line.strip()]
         else:
-            # 尝试获取第一个值
-            generated_queries = list(response.values())[0] if response else []
+            raw = list(response.values())[0] if response else []
     else:
-        # 如果返回的是字符串，按行分割
-        generated_queries = [line.strip() for line in str(response).strip().split('\n') if line.strip()]
+        raw = [line.strip() for line in str(response).strip().split('\n') if line.strip()]
+
+    # 展平：llm_chain 可能返回 [['q1', 'q2', 'q3']] 这种嵌套结构
+    generated_queries = []
+    for item in raw:
+        if isinstance(item, list):
+            generated_queries.extend(item)
+        else:
+            generated_queries.append(item)
 
     logger.info(f"从 '{question}' 生成了 {len(generated_queries)} 个查询变体:")
     for idx, query in enumerate(generated_queries, 1):
