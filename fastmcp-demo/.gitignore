@@ -25,5 +25,6 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Docker
+# 日志
+logs/
 *.log

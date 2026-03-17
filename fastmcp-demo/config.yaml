@@ -1,0 +1,6 @@
+# fastmcp-demo 配置
+
+# ==================== 日志配置 ====================
+logging:
+  level: "INFO"
+  file: "logs/app.log"
