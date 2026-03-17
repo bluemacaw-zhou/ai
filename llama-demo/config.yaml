@@ -19,6 +19,21 @@ zhipu:
   embedding:
     model: "embedding-2"
 
+# ==================== LlamaIndex 配置 ====================
+llama:
+  data_path: "data"
+  chunk_size: 512
+  chunk_overlap: 200
+  similarity_top_k: 5
+  rerank_top_n: 2
+  similarity_cutoff: 0.6
+  num_queries: 3
+  build_knowledge_base: true
+
+# ==================== Qdrant 配置 ====================
+qdrant:
+  path: "qdrant_db"
+
 # ==================== 日志配置 ====================
 logging:
   level: "INFO"
