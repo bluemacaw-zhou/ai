@@ -1,0 +1,16 @@
+[project]
+name = "function-call-demo"
+version = "0.1.0"
+description = "Function Calling 演示 - 使用 ZhipuAI GLM 实现工具调用"
+requires-python = ">=3.12"
+dependencies = [
+    "PyJWT>=2.8.0",
+    "ai-starter",
+]
+
+[tool.uv]
+index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+package = false
+
+[tool.uv.sources]
+ai-starter = { path = "../ai-starter", editable = true }
