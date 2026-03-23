@@ -34,8 +34,22 @@ class FunctionCallDemo:
         }
     ]
 
+    _functions = {
+        "get_weather": lambda **kwargs: FunctionCallDemo._get_weather(**kwargs),
+    }
+
     def __init__(self) -> None:
         self._llm = ZhipuAIBase()
+
+    @staticmethod
+    def _get_weather(*, latitude: float, longitude: float) -> dict:
+        """模拟天气查询（实际项目中调用真实天气 API）"""
+        return {
+            "temperature": 23,
+            "weather": "Sunny",
+            "wind_direction": "South",
+            "windy": 2,
+        }
 
     def function_call_test(self) -> None:
         messages = [{"role": "user", "content": "What's the weather like in Shanghai today?"}]
@@ -61,15 +75,17 @@ class FunctionCallDemo:
                 logger.info(f"工具调用参数不完整，缺少: {missing}, 实际参数: {args}")
             else:
                 logger.info(f"模型触发了工具调用: {func_call}")
+                result = self._functions[func_call["name"]](**args)
+                logger.info(f"工具执行结果: {result}")
         else:
             logger.info(f"模型直接回复（未触发工具）: {choice.get('content', '')}")
 
 
 def main() -> None:
     demo = FunctionCallDemo()
-    # demo.function_call_test()
+    demo.function_call_test()
     # demo.no_function_call_test()
-    demo.missing_args_test()
+    # demo.missing_args_test()
 
 
 if __name__ == "__main__":
