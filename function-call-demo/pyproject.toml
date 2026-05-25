@@ -6,10 +6,15 @@ requires-python = ">=3.12"
 dependencies = [
     "PyJWT>=2.8.0",
     "ai-starter",
+    "datasets>=2.19.0",
+    "langchain>=0.2.0,<1.0.0",
+    "langchain-community>=0.2.0,<1.0.0",
+    "rank-bm25>=0.2.2",
+    "smolagents>=1.0.0",
 ]
 
 [tool.uv]
-index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+index-url = "http://10.100.1.27:8688/repository/Pypi-proxy/simple"
 package = false
 
 [tool.uv.sources]
