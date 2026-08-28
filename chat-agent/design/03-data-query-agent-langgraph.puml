@@ -1,0 +1,108 @@
+﻿@startuml
+title DataQueryAgent：LangGraph 查询编排子图
+skinparam shadowing false
+hide empty description
+
+state Initialize
+Initialize : 代码节点
+Initialize : 输入：query_requirement（自然语言查询需求）
+Initialize : 输出：DataQueryState
+
+state ResolveWindCode
+ResolveWindCode : MCP 节点：fin_ner
+ResolveWindCode : 输出：wind_codes[]（按主体识别结果）
+
+state ResolveSector
+ResolveSector : MCP 节点：search_sectors
+ResolveSector : 输出：sectors[]（板块候选及类别，按相关度排序）
+ResolveSector : 多个语义相似的候选时，节点内解析 MCP 返回结果后直接取 sectors[0]（列表第一项）作为 selected_scope，
+ResolveSector : 这是节点内部解析逻辑的一部分代码规则，不依赖 search_sectors 自身具备选优能力，不暂停等待用户
+
+state QueryCosmos
+QueryCosmos : MCP 节点：query_financial_data
+QueryCosmos : 输入：query_requirement + wind_code 或 sector
+QueryCosmos : 输出：sql、data、meta_data
+
+state "ChooseFallback\nLLM 节点" as ChooseFallback #4A90E2
+ChooseFallback : 输入：query_requirement、已确定查询范围、Cosmos 空结果诊断
+ChooseFallback : 输出：fallback_target = data | document
+
+state FallbackData
+FallbackData : MCP 节点：financial_query_data
+FallbackData : 输入：query_requirement + 已确定的查询范围
+FallbackData : 输出：数据、meta_data 或空结果
+
+state FallbackDocument
+FallbackDocument : MCP 节点：fin_doc_searchV3
+FallbackDocument : 输入：query_requirement + 已确定的查询范围
+FallbackDocument : 输出：文档证据或空结果
+
+state ReturnQueryResult
+ReturnQueryResult : 代码节点
+ReturnQueryResult : 输出 ToolMessage：
+ReturnQueryResult : {source, sql?, data?, meta_data?, document?, diagnostics?}
+ReturnQueryResult : 原样返回最近一次 MCP 调用的结果；不判断结果是否足以回答问题
+
+state ReturnDecompositionRequired
+ReturnDecompositionRequired : 代码节点
+ReturnDecompositionRequired : 输出 ToolMessage：
+ReturnDecompositionRequired : {status=decomposition_required, reason, entities_or_sectors}
+ReturnDecompositionRequired : 交给上层 Harness LLM 继续拆分为多个查询目标
+
+[*] --> Initialize
+Initialize --> ResolveWindCode
+
+ResolveWindCode --> QueryCosmos : 单一 WindCode
+ResolveWindCode --> ReturnDecompositionRequired : 多个不同主体
+ResolveWindCode --> ResolveSector : 未识别主体
+
+ResolveSector --> QueryCosmos : 单一板块\n按板块直接查询
+ResolveSector --> ReturnDecompositionRequired : 多个不同类别板块
+ResolveSector --> QueryCosmos : 多个相似板块\n节点内取 sectors[0] 后直接查询
+ResolveSector --> ReturnQueryResult : 无板块\ndiagnostics=no_sector_resolved
+QueryCosmos --> ReturnQueryResult : data 非空
+QueryCosmos --> ChooseFallback : data 为空
+ChooseFallback --> FallbackData : fallback_target=data
+ChooseFallback --> FallbackDocument : fallback_target=document
+FallbackData --> ReturnQueryResult : 调用完成（结果可为空）
+FallbackDocument --> ReturnQueryResult : 调用完成（结果可为空）
+
+ReturnQueryResult --> [*]
+ReturnDecompositionRequired --> [*]
+
+note left of Initialize
+DataQueryState（子图内部状态）：
+query_requirement、wind_codes、sectors、selected_scope、
+sql、data、meta_data、diagnostics。
+
+节点之间只读写该 State；除 ChooseFallback 外，分支均由代码依据 MCP 的结构化输出路由。
+"多个相似板块取 sectors[0]"这一规则内嵌在 ResolveSector 节点解析 MCP 返回结果的代码里，
+不单独占用一个状态，不依赖 search_sectors 自身具备"从相似候选中选优"的能力。
+该图仅在 Cosmos 空结果后使用 ChooseFallback LLM 节点，不读取或修改 HarnessState / CommandList。
+end note
+
+note right of ChooseFallback
+系统提示词：
+你是查询兜底路径选择器。Cosmos 未返回数据时，
+只根据用户问题、已确定的主体/板块范围和空结果诊断，选择一个最匹配的兜底来源。
+需要结构化行情、指标或时序数据时选择 data；需要定义、解释、研究结论或事件证据时选择 document。
+不得调用 MCP、不得同时选择两条路径、不得重新识别主体或板块。
+
+可用工具：无。
+end note
+
+note bottom of ReturnQueryResult
+DataQueryAgent 对图 05 只暴露一次 ToolMessage。
+仅 source=cosmos 且带 sql 的成功结果，
+可被图 05 的 AssessPresentation 选中并构造图 01 的 RenderCommandInput。
+Wind/RAG 兜底结果、空结果和诊断都原样返回给上层；
+是否足以回答用户问题完全由上层 Harness 审核。
+end note
+
+note bottom of ReturnDecompositionRequired
+decomposition_required 是唯一的中断控制语义：不询问用户，
+由上层 Harness LLM 依据返回的多个不同主体或不同类别板块继续拆分为多个查询目标。
+多个相似板块不属于这种情况，由 ResolveSector 在解析 MCP 返回结果时取 sectors[0] 后直接继续查询，
+不依赖 search_sectors 这个 MCP Server 自身具备排序或选优能力，也不向上层暴露任何等待用户输入的信号。
+end note
+@enduml

@@ -1,0 +1,38 @@
+﻿@startuml
+title Harness：工具结果后更新“正在执行”状态
+autonumber
+hide footbox
+skinparam shadowing false
+
+actor 用户 as User
+participant "A2UI Client" as Client
+participant "A2aAgentExecutor" as Executor
+participant "Harness MainGraph" as Graph
+database "HarnessState" as State
+participant "Data Query Tool\n图 03" as QueryTool
+
+User -> Client : 询问金油比走势
+Client -> Executor : A2A request
+Executor -> Graph : task_id + original_question
+Graph -> State : Initialize\n追加 root CommandRecord(pending)
+
+Graph -> QueryTool : ExecuteCurrentCommand 的 tool_call
+QueryTool --> Graph : ToolMessage\nSQL + data + meta_data
+Graph -> State : RegisterCommandResult\nroot -> succeeded
+Graph -> Graph : EvaluateCurrentCommand = succeeded
+
+Graph -> Graph : AssessPresentation = skip
+Graph -> Graph : DecideNextGoal\n下一步：获取油价
+Graph -> State : AppendNextCommand\n追加 query CommandRecord(pending)
+Graph -> State : UpdateExecutingStatus\n状态栏 = “正在执行：获取油价”
+Graph --> Executor : 最新 A2UI surface（仅状态栏 data model 更新）
+Executor --> Client : A2A artifact / surface update
+
+Graph -> QueryTool : 执行 CommandList[-1]
+
+note over Graph,State
+UpdateExecutingStatus 是固定代码节点：
+不调用 LLM、不新增 CommandRecord、不产生 ToolMessage。
+因此 MainGraph 随后执行的仍是唯一的最后一条 pending 命令。
+end note
+@enduml

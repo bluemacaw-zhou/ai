@@ -1,0 +1,49 @@
+﻿@startuml
+title Render 类型 CommandRecord.input：SQL 到 UI 的稳定映射
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+class RenderCommandInput {
+  + requirement: str（本次数据要向用户说明的业务需求）
+  + sql: str（查询工具返回的规范 SQL，是 UI 的稳定数据标识）
+  + data: object[]（该 SQL 本次查询得到的真实数据）
+  + meta_data: object[]（字段元数据占位，结构后续定义）
+}
+
+class RenderRegistry {
+  + sql_surface_map: Map[str, str]（规范 SQL -> surfaceId）
+}
+
+class HarnessState {
+  + render_registry: RenderRegistry（持久化的 SQL -> surfaceId 映射）
+  + latest_a2ui_surface: JSON?（最近一次完整 A2UI surface 报文）
+}
+
+RenderCommandInput --> HarnessState : Render Tool 从 HarnessState 读取
+HarnessState *-- RenderRegistry
+
+note bottom of RenderRegistry
+Render Tool 维护并更新 HarnessState.render_registry.sql_surface_map，
+Harness 不向 RenderCommandInput 传递 surfaceId。
+
+首次遇到 SQL：未命中映射，创建新的 UI 节点，填充 data，登记 sql -> surfaceId。
+再次遇到相同 SQL：命中同一 surfaceId，只更新该 UI 的 data model。
+
+一个 render CommandRecord 只处理一个 SQL 与一个确定的 UI 目标，
+不存在“一次工具执行后更新多个 UI”的分支。
+end note
+
+note right of RenderCommandInput
+input 的唯一业务边界：requirement、sql、data、meta_data。
+
+不属于 input：
+- task_id、original_question：在外层 CommandRecord；
+- surfaceId：由 HarnessState.render_registry 中的 sql_surface_map 管理；
+- latest_a2ui_surface：保存在 HarnessState，代表客户端当前样式；
+- A2UI 组件树、UiOperation、已发布 surface：Render Tool 输出；
+- 命令引用、SQL 生成过程、计算脚本、下一步求解计划。
+
+sql 必须由查询工具返回并保持规范化语义，不能使用 LLM 自由生成的 SQL 文本。
+end note
+@enduml

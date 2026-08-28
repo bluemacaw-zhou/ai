@@ -1,0 +1,104 @@
+﻿@startuml
+title 全局会话状态：HarnessState
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+enum CommandKind {
+  query
+  calculate
+  render
+}
+
+enum CommandStatus {
+  pending
+  succeeded
+  failed
+}
+
+enum DiagnosticReasonCode {
+  no_tool_matched
+  data_unavailable
+  tool_execution_failed
+  max_commands_exceeded
+  repeated_goal_failure
+  goal_unreachable
+}
+
+class HarnessState {
+  + task_id: str?（进入 Harness 后绑定的 A2A taskId）
+  + original_question: str（外层接收的用户初始问题）
+  + command_list: CommandRecord[]（按 sequence_no 只追加）
+  + render_registry: RenderRegistry（由 Render Tool 维护的 SQL -> surfaceId 映射）
+  + latest_a2ui_surface: JSON?（最近一次成功发布给客户端的完整 A2UI surface 报文）
+  + max_command_list_length: int（Initialize 时从外部配置读入，默认 50，用于终止判定）
+  + failure_streak_threshold: int（Initialize 时从外部配置读入，默认 5；CommandList 中失败总数达到此阈值即触发 CheckSameGoalRepetition，不要求连续）
+}
+
+class RenderRegistry {
+  + sql_surface_map: Map[str, str]（规范 SQL -> surfaceId）
+}
+
+class CommandRecord {
+  + task_id: str（冗余的 A2A taskId，便于独立持久化与检索）
+  + original_question: str（冗余的用户初始问题，确保单条命令不丢失根目标）
+  + sequence_no: int（同一 task 内的命令唯一标识与回放顺序）
+  + kind: CommandKind（root 记录初始问题，history 记录多轮会话上下文）
+  + requirement: str（本条命令要完成的业务目标）
+  + input: JSON?（工具实际入参；render 固定为 RenderCommandInput，见图 01）
+  + depends_on: str[]（从 input 派生的依赖索引，仅调试与血缘）
+  + status: CommandStatus（history 为 record；root 与可执行命令经历 pending 和终态）
+  + output: JSON?（命令正常执行后产生的输出；pending 时为空）
+  + diagnostics: {reason_code, message, details}?（终态诊断信息）
+}
+
+HarnessState *-- "0..*" CommandRecord : append_only_command_list
+HarnessState *-- "1" RenderRegistry
+CommandRecord --> CommandKind
+CommandRecord --> CommandStatus
+CommandRecord --> DiagnosticReasonCode : diagnostics.reason_code
+
+note bottom of HarnessState
+HarnessState 是外层交互流程与 Harness 核心共享的全局会话状态。
+original_question 全链路只用这一个变量名：RewriteQuestion（图08）消解代词、省略后产出它；
+PreprocessQuestion 只读取、不改写、不重命名；StartHarness 创建 HarnessState 时把它写入
+HarnessState.original_question，并绑定 task_id。ReceiveUserQuestion 阶段的 raw_question
+只是 RewriteQuestion 的输入，不直接写入 HarnessState。
+降级响应和 Harness 核心都读取同一份上下文。
+
+CommandList 的成员只追加，历史终态记录不再修改。
+初始化先追加一条 kind=root、status=pending 的 CommandRecord；
+随后 AssessPresentation 或 DecideNextGoal 每轮追加一条 status=pending 的新 CommandRecord；
+该记录必须是列表最后一项，04 总是执行它。
+执行 Agent 发起工具调用时形成该项 input；工具返回后 RegisterCommandResult
+将该最后一项更新为 succeeded 或 failed，并写入 output/diagnostics。
+因此每个时刻最多只有一条 pending 记录。
+plan 用于加工 input，input 才是工具真正接收的数据。
+当前阶段 kind 只记录命令语义，不作为 LangGraph 的路由条件。
+
+diagnostics 是终态 CommandRecord 的结构化诊断：
+reason_code 是机器可判定的原因码；message 是供 LLM/用户理解的简短说明；
+details 保存候选主体、候选板块、工具错误或其他原始上下文。
+ToolMessage 技术成功且业务达成 -> succeeded；其余情况统一为 failed，
+具体原因由 reason_code 区分：no_tool_matched 表示本轮没有可调用工具；
+data_unavailable 表示已查询但无可用数据；tool_execution_failed 表示工具技术执行失败；
+max_commands_exceeded 表示 CommandList 长度达到 max_command_list_length 上限；
+repeated_goal_failure 表示全局失败总数达到 failure_streak_threshold 阈值（不要求连续）后，
+经 CheckSameGoalRepetition 语义判定为同一子目标反复失败；
+goal_unreachable 表示 CheckGoalCompletion 判定根问题尚未完整解答，且 DecideNextGoal 找不到合理下一步。
+status 只表达成功与否，reason_code 承担全部失败原因的解释，两者不重复表达同一件事。
+不存在等待用户输入的诊断语义；多个相似板块等歧义由图 03 的 ResolveSector 自动选定后继续执行。
+
+核心循环停止且 CommandList 不存在 pending 项时，路由由图 05 直接计算并传给 StartHarness：
+图 05 的 FallbackStrategy / CheckFailureThresholds / CheckSameGoalRepetition / DecideNextGoal
+分别登记 no_tool_matched / max_commands_exceeded / repeated_goal_failure / goal_unreachable 后返回 route=fallback_required；
+图 05 的 CheckGoalCompletion 判定 is_completed=true 时直接返回 route=normal_completed，
+这是唯一的正常完成出口；DecideNextGoal 返回 no_next_command 不再等价于完成，
+而是收尾为 failed / goal_unreachable / fallback_required。
+StartHarness 只消费图 05 传入的 route，不重新读取 diagnostics 做判定。
+UpdateExecutingStatus、外层 CreateMarkdownSurfaceAndSend 与 render ToolMessage 成功后，
+都会将完整 a2ui_surface 回写到 latest_a2ui_surface；
+它是 AssessPresentation 判断客户端当前样式的唯一依据。
+Render Tool 成功后还会回写 render_registry；它是下次按 SQL 定位 UI 的唯一依据。
+end note
+@enduml

@@ -1,0 +1,99 @@
+﻿@startuml
+title Harness 外层：问题预处理与最小路由
+skinparam shadowing false
+hide empty description
+
+state ReceiveUserQuestion
+ReceiveUserQuestion : 代码节点
+ReceiveUserQuestion : 输入：raw_question（用户原始文本，未经任何加工）
+ReceiveUserQuestion : 输入：A2A task_history（当前 task 的既有对话与产物摘要）
+ReceiveUserQuestion : 输出：raw_question + task_history，供 RewriteQuestion 使用；此时尚未创建 HarnessState
+
+state "RewriteQuestion\nLLM 节点" as RewriteQuestion #4A90E2
+RewriteQuestion : 输入：raw_question + A2A task_history
+RewriteQuestion : 输出：original_question（消解代词、省略后的独立问句）
+RewriteQuestion : original_question 是全链路唯一使用的问题变量名，此后不再改名
+
+state "PreprocessQuestion\nLLM 节点" as PreprocessQuestion #4A90E2
+PreprocessQuestion : 输入：original_question
+PreprocessQuestion : 输出：route（harness | direct_answer），不改写、不重命名 original_question
+
+state StartHarness
+StartHarness : 代码节点
+StartHarness : 输入：original_question
+StartHarness : 创建全局 HarnessState 并写入 original_question，绑定 task_id，进入图 05 Initialize
+StartHarness : 输出：normal_completed | fallback_required
+
+state "AnswerFallback\nLLM 节点" as AnswerFallback #4A90E2
+AnswerFallback : 输入：全局 HarnessState + fallback_reason
+AnswerFallback : 输出：fallback_answer
+
+state "AnswerDirectly\nLLM 节点" as AnswerDirectly #4A90E2
+AnswerDirectly : 输入：全局 HarnessState
+AnswerDirectly : 输出：direct_answer
+
+state CreateMarkdownSurfaceAndSend
+CreateMarkdownSurfaceAndSend : 固定代码节点（不调用 LLM）
+CreateMarkdownSurfaceAndSend : 输入：direct_answer | fallback_answer
+CreateMarkdownSurfaceAndSend : 手工创建仅含一个 Markdown 正文组件的 A2UI surface 并一次性发送
+CreateMarkdownSurfaceAndSend : 输出：更新 HarnessState.latest_a2ui_surface
+
+[*] --> ReceiveUserQuestion
+ReceiveUserQuestion --> RewriteQuestion
+RewriteQuestion --> PreprocessQuestion
+PreprocessQuestion --> StartHarness : route=harness
+PreprocessQuestion --> AnswerDirectly : route=direct_answer
+StartHarness --> [*] : normal_completed\n发送核心 Harness 的 latest_a2ui_surface
+StartHarness --> AnswerFallback : fallback_required
+AnswerFallback --> CreateMarkdownSurfaceAndSend : fallback_answer
+AnswerDirectly --> CreateMarkdownSurfaceAndSend : direct_answer
+CreateMarkdownSurfaceAndSend --> [*]
+
+note right of PreprocessQuestion
+系统提示词：
+你是问题预处理器。判断用户问题是否属于金融信息获取：
+即需要查询金融主体、板块、行情、指标、时序数据或金融文档证据。
+若是，输出 route=harness；若否，输出 route=direct_answer。
+不得改写 original_question、不得回答问题、不得调用数据工具、不得创建 HarnessState。
+
+可用工具：无。
+输出：{route: harness|direct_answer}。
+end note
+
+note right of RewriteQuestion
+系统提示词：
+你是问题改写器。根据当前用户输入和同一 A2A task 的已有对话、
+已确认的主体/板块、时间范围及阶段结论，消解代词、省略与追问，
+生成语义等价、可脱离历史独立理解的 original_question。
+不得改变用户意图、扩大查询范围、虚构尚未确认的事实或回答问题。
+若历史不足以消解歧义，保留原始歧义，不得自行选择。
+
+可用工具：无。
+输出：{original_question: str}。
+end note
+
+note right of AnswerDirectly
+系统提示词：
+直接回答用户的非金融信息获取问题。
+
+可用工具：无。
+end note
+
+note right of AnswerFallback
+系统提示词：
+你是 Harness 的降级回答器。当前命令没有可匹配工具或无法继续时，
+根据完整 HarnessState、fallback_reason 和已取得事实，给出能力边界内的回答，
+或清楚说明无法继续的原因。
+不得虚构未取得的金融数据或结论。
+
+可用工具：无。
+end note
+
+note bottom of StartHarness
+此图只定义最小入口路由，不属于当前图，也不修改图 01 至图 07 的核心契约。
+
+外层的直接回答与降级回答均不产生中间过程 surface，
+而是统一经 CreateMarkdownSurfaceAndSend 一次性生成并发送完整 Markdown surface。
+Harness 正常完成则直接发送核心已生成的 latest_a2ui_surface。
+end note
+@enduml

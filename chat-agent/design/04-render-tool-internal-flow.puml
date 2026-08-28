@@ -1,0 +1,58 @@
+﻿@startuml
+title Render Tool 内部：按 SQL 创建或更新确定 UI
+skinparam shadowing false
+hide empty description
+
+state ReceiveRenderCall
+ReceiveRenderCall : 输入：05 ExecuteCurrentCommand 已匹配 Render Tool 的 tool_call
+ReceiveRenderCall : 参数：CommandRecord.input = RenderCommandInput（见图 01）
+ReceiveRenderCall : {requirement, sql, data, meta_data}
+ReceiveRenderCall : 外层上下文：HarnessState.render_registry、latest_a2ui_surface
+
+state LookupSqlSurface
+LookupSqlSurface : 代码节点
+LookupSqlSurface : 以 input.sql 查询 render_registry.sql_surface_map
+
+state "GenerateNewUiNode\nLLM 节点" as GenerateNewUiNode #4A90E2
+GenerateNewUiNode : 输入：requirement、sql、data、meta_data、当前 surface
+GenerateNewUiNode : 输出：新 UI 节点的 component 定义
+
+state CreateAndBind
+CreateAndBind : 代码节点
+CreateAndBind : 校验 A2UI 协议、Catalog 与数据绑定后，创建 UI 节点并填充 data model
+CreateAndBind : 写入 render_registry.sql_surface_map[sql] = surfaceId
+
+state UpdateBoundData
+UpdateBoundData : 代码节点
+UpdateBoundData : 命中既有 surfaceId，只更新该 UI 节点的 data model
+
+state ReturnToolMessage
+ReturnToolMessage : 输出：ToolMessage
+ReturnToolMessage : {render_registry, a2ui_surface, surface_id, published_operations}
+
+[*] --> ReceiveRenderCall
+ReceiveRenderCall --> LookupSqlSurface
+LookupSqlSurface --> GenerateNewUiNode : 未命中 SQL
+LookupSqlSurface --> UpdateBoundData : 命中 surfaceId
+GenerateNewUiNode --> CreateAndBind
+CreateAndBind --> ReturnToolMessage
+UpdateBoundData --> ReturnToolMessage
+ReturnToolMessage --> [*]
+
+note right of GenerateNewUiNode
+系统提示词：
+你是 A2UI 渲染子 Agent。当前 SQL 尚无已绑定 UI，
+请依据 requirement、真实 data、meta_data 与当前 surface，
+生成一个最小且符合 Catalog 的新 UI 节点定义。
+不得修改业务数据、不得查询或计算、不得修改已有 SQL 的绑定节点。
+
+可用工具：无。
+可用上下文资源：A2UI Catalog、HarnessState.latest_a2ui_surface、RenderCommandInput。
+end note
+
+note bottom of LookupSqlSurface
+一个 render CommandRecord 只含一个 SQL，因此只对应一个 UI 目标。
+SQL 首次出现时创建节点；同一 SQL 后续出现时只更新已绑定节点的数据。
+Render Tool 返回更新后的 registry 与完整 surface，供图 05 的 RegisterCommandResult 回写 HarnessState。
+end note
+@enduml

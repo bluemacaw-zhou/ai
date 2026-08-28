@@ -1,0 +1,31 @@
+node_modules
+.DS_Store
+.wireit
+dist
+.idx
+.vscode
+.idea
+__pycache__
+*.pyc
+.angular
+
+# MkDocs build output
+site/
+
+# Python virtual environment
+.venv/
+coverage/
+
+# Local runtime configuration and generated logs
+src/.env
+src/log/
+log/
+*.log
+.uv-cache/
+__pycache__/
+*.py[cod]
+
+# PyCharm: keep only shared run configurations.
+.idea/*
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml

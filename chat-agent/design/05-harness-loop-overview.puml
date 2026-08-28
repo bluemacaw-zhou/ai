@@ -1,0 +1,270 @@
+﻿@startuml
+title Harness 主循环：命令执行、登记、评审、呈现与终止判定（原图 05+06 合并）
+skinparam shadowing false
+hide empty description
+
+state Initialize
+Initialize : 代码节点
+Initialize : 输入：A2A task_id、用户 original_question
+Initialize : 输出：HarnessState + CommandRecord(kind=root, status=pending)
+Initialize : 同时从外部配置读取 max_command_list_length，写入 HarnessState（默认 50）
+Initialize : 同时从外部配置读取 failure_streak_threshold，写入 HarnessState（默认 5，用于 CheckFailureThresholds 判定2）
+
+state "ExecuteCurrentCommand\nLLM 节点" as ExecuteCurrentCommand #4A90E2
+ExecuteCurrentCommand : 输入：完整 HarnessState，执行 CommandList[-1]（status=pending）
+ExecuteCurrentCommand : 按 requirement、plan 和历史 output 自主决定是否调用工具
+ExecuteCurrentCommand : 可用工具：查询、计算、渲染等专业 MCP Tool
+ExecuteCurrentCommand : 工具调用在此 Agent 内部完成，不是 LangGraph 节点
+ExecuteCurrentCommand : 有工具调用时输出：AIMessage(tool_call) + ToolMessage
+ExecuteCurrentCommand : 无工具调用时输出：无 ToolMessage
+
+state FallbackStrategy
+FallbackStrategy : 固定代码节点（不调用 LLM）
+FallbackStrategy : 输入：当前 pending CommandRecord 未产生 ToolMessage
+FallbackStrategy : 将当前命令收尾为 status=failed
+FallbackStrategy : 填充 diagnostics.reason_code=no_tool_matched、message、details
+FallbackStrategy : 输出：向上返回 HarnessState + route=fallback_required
+
+state RegisterCommandResult
+RegisterCommandResult : 代码节点
+RegisterCommandResult : 输入：HarnessState + 工具刚返回的 ToolMessage
+RegisterCommandResult : 读取 CommandList[-1]（必须为 pending）
+RegisterCommandResult : 从配对的 AIMessage.tool_call 提取 input 与工具类型
+RegisterCommandResult : 输出：更新最后一项的 input、status、output、diagnostics、depends_on
+RegisterCommandResult : ToolMessage 技术成功且业务达成 -> succeeded；其余（业务不可查询/技术错误）-> failed，由 diagnostics.reason_code 区分具体原因
+RegisterCommandResult : render 成功时，同时回写 HarnessState.render_registry 与 latest_a2ui_surface
+
+state "EvaluateCurrentCommand\nLLM 节点" as EvaluateCurrentCommand #4A90E2
+EvaluateCurrentCommand : 输入：HarnessState + 刚登记的 CommandList[-1]
+EvaluateCurrentCommand : 输出：evaluation = succeeded | failed，附带 reason
+
+state "AssessPresentation\nLLM 节点" as AssessPresentation #4A90E2
+AssessPresentation : 输入：HarnessState（含 latest_a2ui_surface）
+AssessPresentation : 输出：presentation_decision（单 SQL 的 render 输入或 skip）
+
+state AppendRenderCommand
+AppendRenderCommand : 代码节点
+AppendRenderCommand : 节点内静态提取数据并构造 RenderCommandInput（见图 01）
+AppendRenderCommand : 输入：presentation_decision + HarnessState
+AppendRenderCommand : 输出：追加 CommandRecord(kind=render, status=pending, input=render_input)
+AppendRenderCommand : 返回 ExecuteCurrentCommand
+
+state "CheckGoalCompletion\nLLM 节点" as CheckGoalCompletion #4A90E2
+CheckGoalCompletion : 输入：HarnessState，尤其是完整 CommandList + original_question
+CheckGoalCompletion : 判断根问题 original_question 是否已经被完整、真实地解答
+CheckGoalCompletion : 输出：is_completed = true | false，附带 reason
+CheckGoalCompletion : is_completed=true -> 直接向上返回 route=normal_completed
+CheckGoalCompletion : is_completed=false -> 进入 DecideNextGoal，尝试推进或最终降级
+
+state "DecideNextGoal\nLLM 节点" as DecideNextGoal #4A90E2
+DecideNextGoal : 输入：HarnessState + CheckGoalCompletion 已判定 is_completed=false
+DecideNextGoal : 输出：next_command 或 no_next_command
+DecideNextGoal : no_next_command 不再等价于任务完成；完成判定已前移到 CheckGoalCompletion
+DecideNextGoal : no_next_command -> 收尾为 failed，diagnostics.reason_code=goal_unreachable，返回 route=fallback_required
+DecideNextGoal : 不再负责终止边界判断，终止边界已前移到失败分支的代码检查节点
+
+state CheckFailureThresholds
+CheckFailureThresholds : 固定代码节点（不调用 LLM），代价极小
+CheckFailureThresholds : 输入：EvaluateCurrentCommand 返回 evaluation=failed 时的完整 CommandList
+CheckFailureThresholds : 判定1（长度上限）：len(CommandList) >= HarnessState.max_command_list_length
+CheckFailureThresholds : 命中判定1 -> 收尾为 failed，diagnostics.reason_code=max_commands_exceeded，直接返回，不再调用 DecideNextGoal
+CheckFailureThresholds : 判定2（全局失败堆积，仅在判定1未命中时检查）：count(CommandRecord.status == failed) >= HarnessState.failure_streak_threshold
+CheckFailureThresholds : 统计整个 CommandList 中失败总数，不要求连续；只做状态计数，不判断这些命令是否指向同一目标
+CheckFailureThresholds : 未达到阈值 -> 直接放行进入 DecideNextGoal，跳过语义判断（多数轮次走这条路径，避免不必要的 LLM 调用）
+CheckFailureThresholds : 达到阈值 -> 触发 CheckSameGoalRepetition 做语义判断，读取最近 3 条 failed 记录
+CheckFailureThresholds : 仅挂在 failed 分支；succeeded 分支不经过本节点（该场景下 CommandList 不会持续增长）
+CheckFailureThresholds : 用全局失败计数代替"连续 3 条"，避免偶发一次成功打断计数后规避检测（对应 review-issues.md 问题3的加固）
+
+state "CheckSameGoalRepetition\nLLM 节点" as CheckSameGoalRepetition #4A90E2
+CheckSameGoalRepetition : 仅在 CheckFailureThresholds 判定全局失败数达到阈值时触发
+CheckSameGoalRepetition : 输入：最近 3 条 failed CommandRecord 的 requirement、diagnostics（不传完整 CommandList）
+CheckSameGoalRepetition : 输出：is_same_goal = true | false
+CheckSameGoalRepetition : 语义判断这 3 条 requirement 是否指向同一子目标反复失败，而非 3 个不同目标恰好都失败
+CheckSameGoalRepetition : is_same_goal=true -> 收尾为 failed，diagnostics.reason_code=repeated_goal_failure，直接返回，不再调用 DecideNextGoal
+CheckSameGoalRepetition : is_same_goal=false -> 放行进入 DecideNextGoal
+
+state AppendNextCommand
+AppendNextCommand : 代码节点
+AppendNextCommand : 输入：next_command(kind, requirement, plan)
+AppendNextCommand : 输出：追加 CommandRecord(status=pending)，成为 CommandList[-1]
+AppendNextCommand : 补齐 task_id、original_question、sequence_no 等固定字段
+
+state UpdateExecutingStatus
+UpdateExecutingStatus : 固定代码节点（不调用 LLM）
+UpdateExecutingStatus : 输入：刚追加的 CommandList[-1].requirement
+UpdateExecutingStatus : 直接更新固定状态栏：正在执行 current_requirement
+UpdateExecutingStatus : 输出：updateDataModel(status) + 回写 HarnessState.latest_a2ui_surface
+UpdateExecutingStatus : 不创建正文组件，不追加 CommandRecord，不产生 ToolMessage
+
+[*] --> Initialize
+Initialize --> ExecuteCurrentCommand : root 为 CommandList[-1]
+
+ExecuteCurrentCommand --> RegisterCommandResult : ToolMessage
+ExecuteCurrentCommand --> FallbackStrategy : 未调用工具
+FallbackStrategy --> [*] : 返回 route=fallback_required
+
+RegisterCommandResult --> EvaluateCurrentCommand : 更新后的 HarnessState
+EvaluateCurrentCommand --> AssessPresentation : evaluation=succeeded
+EvaluateCurrentCommand --> CheckFailureThresholds : evaluation=failed
+AssessPresentation --> AppendRenderCommand : action=render
+AssessPresentation --> CheckGoalCompletion : action=skip
+AppendRenderCommand --> ExecuteCurrentCommand : 返回执行新的 render 命令
+
+CheckGoalCompletion --> [*] : is_completed=true，返回 route=normal_completed
+CheckGoalCompletion --> DecideNextGoal : is_completed=false
+
+CheckFailureThresholds --> [*] : 命中长度上限，返回 route=fallback_required\n(reason_code=max_commands_exceeded)
+CheckFailureThresholds --> DecideNextGoal : 未命中长度上限，且全局失败数未达阈值（直接放行）
+CheckFailureThresholds --> CheckSameGoalRepetition : 未命中长度上限，但全局失败数达到阈值
+CheckSameGoalRepetition --> DecideNextGoal : is_same_goal=false（放行）
+CheckSameGoalRepetition --> [*] : is_same_goal=true，返回 route=fallback_required\n(reason_code=repeated_goal_failure)
+
+DecideNextGoal --> [*] : no_next_command（根目标无法达成，降级）\n返回 route=fallback_required\n(reason_code=goal_unreachable)
+DecideNextGoal --> AppendNextCommand : next_command
+
+AppendNextCommand --> UpdateExecutingStatus
+UpdateExecutingStatus --> ExecuteCurrentCommand : 返回执行新追加的命令
+
+note bottom of ExecuteCurrentCommand
+当前阶段只有一个通用执行 Agent，不按 kind 路由。
+kind 是 CommandRecord 的语义记录，供回放、评估和后续扩展使用，
+不是当前的 LangGraph 节点选择条件。
+Agent 调用任一工具时产生 AIMessage(tool_call) 与 ToolMessage；
+ToolMessage 是进入 RegisterCommandResult 的唯一触发条件。
+end note
+
+note right of ExecuteCurrentCommand
+系统提示词：
+你是当前命令的执行 Agent，只执行 CommandList 的最后一条 pending 命令。
+结合该命令的 requirement、plan 和已登记的历史 output，
+选择一次最匹配的 MCP 工具并提供真实入参；不得改写 CommandList、
+不得自行创建下一条命令、不得把未取得的数据当作工具结果。
+若无法调用任何工具，直接返回无工具结果，由降级策略处理。
+
+可用 MCP 工具：
+1. Data Query Tool（图 03）：编排主体/板块识别、Cosmos 查询及 Wind/RAG 兜底，返回数据或拆分信号；
+2. Calculation Tool：使用已取得的数据、公式与对齐规则计算派生结果；
+3. Render Tool：依据呈现意图、数据和字段元数据创建或更新 A2UI surface。
+end note
+
+note top of EvaluateCurrentCommand
+系统提示词：
+你是当前命令的执行评审器。读取刚登记的最后一条 CommandRecord 的 requirement、
+input、output、diagnostics，并对照 original_question 和已完成命令的事实，
+判断本轮是否真正达成该命令的业务目标。
+工具调用技术成功不等于业务成功；空数据、不相关数据、不完整结果或不可查询都应判 failed。
+不得修改 CommandList、不得查询或计算、不得决定下一目标、不得触发渲染。
+
+可用工具：无。
+输出：evaluation = {result: succeeded|failed, reason: str}。
+end note
+
+note left of AssessPresentation
+系统提示词：
+你是阶段呈现判断器。仅在当前命令已经通过 EvaluateCurrentCommand 评审后，
+决定当前是否应更新 UI，不负责继续求解，
+不调用外部工具。先读取 HarnessState.latest_a2ui_surface，它代表客户端当前展示的样式；
+再围绕 original_question 审阅完整 CommandList，识别刚取得的结果是否构成阶段突破。
+阶段突破是指新增了可独立解释进展的查询或计算成果，而非单纯的失败诊断、
+已呈现成果的重复或与根问题无关的数据。
+
+若存在可呈现的成功查询结果，提取其中真实的 SQL、data、meta_data，
+并根据 original_question 形成 requirement，输出 render。SQL 是唯一 UI 数据标识；
+Render Tool 将依据 HarnessState.render_registry 决定创建新节点或更新既有节点。
+若没有可呈现的成功查询结果，输出 skip。
+不得查询、计算、结束任务、虚构数据、编造 surfaceId 或重复生成 SQL。
+
+可用工具：无。
+输出：presentation_decision =
+{action: render|skip, requirement?: str, sql?: str, data?: object[], meta_data?: object[], rationale: str}。
+action=render 时必须携带一个成功查询工具返回的规范 SQL 与对应真实数据。
+end note
+
+note right of CheckGoalCompletion
+系统提示词：
+你是根目标完成度判断器。仅在当前命令已通过 EvaluateCurrentCommand 评审为
+succeeded 且 AssessPresentation 判定 skip（无需新增渲染）之后被调用。
+对照 original_question 与完整 CommandList 中的成功事实，判断根问题是否已经
+被完整、真实地解答，而不是只完成了某个子步骤。
+不得凭猜测判定完成，不得虚构未取得的事实，不得决定下一目标，不得触发渲染。
+
+可用工具：无。
+输出：{is_completed: bool, reason: str}。
+is_completed=true 时任务在本节点直接收尾为 route=normal_completed；
+is_completed=false 时进入 DecideNextGoal，尝试推进下一步或最终判定为无法达成。
+end note
+
+note right of DecideNextGoal
+系统提示词：
+你是金融任务 Harness 的下一目标决策器。仅在 CheckGoalCompletion 判定
+根问题尚未完整解答（is_completed=false），或本轮 evaluation=failed 且已通过
+CheckFailureThresholds / CheckSameGoalRepetition 门槛检查后才会被调用。
+根目标由 original_question 决定，不能被子问题替代。
+阅读已完成命令的成功、不可查询和失败事实，
+若仍有能够推进根目标的下一步，输出唯一一条下一命令；
+若不存在合理的下一步，输出 no_next_command——这意味着根目标被判定为无法达成，
+任务将收尾为 failed / route=fallback_required，而不是正常完成。
+不得改写历史、虚构数据或把渲染结果作为业务完成证据。
+呈现是否更新已由 AssessPresentation 决定；不得输出 kind=render。
+任务是否已经完整解答由 CheckGoalCompletion 负责，本节点不需要重复判断。
+
+输入：完整 HarnessState，尤其是完整 CommandList。
+输出：{next_command: {kind, requirement, plan}} 或 {no_next_command: true}。
+CommandList 中的每条记录都带 original_question；模型读取它来保持根目标。
+plan 只描述数据选择或公式，不携带实际数据。
+
+可用工具：无。它只生成下一条非渲染命令，后续由 ExecuteCurrentCommand 选择 MCP 工具。
+允许的 kind：query、calculate。
+end note
+
+note right of CheckSameGoalRepetition
+系统提示词：
+你是重复目标检测器。仅在 CommandList 中全局失败总数达到 failure_streak_threshold 阈值时被调用
+（不要求这些失败连续出现）。
+只根据最近 3 条 failed 命令的 requirement 与 diagnostics，判断它们是否语义上
+指向同一个子目标反复尝试失败，而不是几个不同目标各自失败一次。
+若指向同一子目标，输出 is_same_goal=true，任务将判定为无法达成并降级；
+若指向不同目标，输出 is_same_goal=false，任务继续正常推进。
+不得读取超出这 3 条命令范围的历史，不得给出继续尝试的建议，不得改写 CommandList。
+
+可用工具：无。
+输出：{is_same_goal: bool, rationale: str}。
+end note
+
+note bottom of RegisterCommandResult
+history 是 record；root、query、calculate、render 先以 pending 追加。
+RegisterCommandResult 只更新最后一条 pending 记录为
+succeeded 或 failed；早于最后一条的终态记录不可修改。
+end note
+
+note bottom of CheckFailureThresholds
+CheckFailureThresholds 内部的长度上限判定与全局失败堆积判定
+都挂在 EvaluateCurrentCommand 返回 evaluation=failed 之后，是同一节点内两种不同性质的终止边界，
+合并成一个代码节点是因为两者都是纯代码判断（不调用 LLM），拆成两个状态没有额外收益：
+前者不判断失败原因，只判断"任务已经跑了足够长，应当停止"，
+适用于命令之间不连续重复、难以用简单规则识别的周期性循环；
+后者判断"整体失败堆积过多，值得快速止损"，不需要等到 max_command_list_length 才终止。
+判定2 统计的是 CommandList 中失败总数（不要求连续），而不是"连续 N 条 failed"：
+连续计数容易被偶发一次成功（例如某次 render 成功或某个子步骤碰巧成功）打断而清零，
+从而规避检测，让"总体在原地打转、偶尔有点小进展但没有真正推进根目标"的空转模式
+一路空转到接近长度上限才被拦下；全局计数不受偶发成功影响，能更早触发
+CheckSameGoalRepetition 的语义判断（对应 review-issues.md 问题3的加固）。
+两者共用 diagnostics.reason_code 区分：
+max_commands_exceeded 与 repeated_goal_failure 都属于 fallback_required，
+但原因不同，AnswerFallback 应分别给出不同的说明文案。
+本应用场景以简单取数、渲染为主，正常情况下 CommandList 不会很长；
+一旦失败分支触发这两类终止边界，直接快速止损、返回降级，交由用户在下一轮重新发起，
+而不是在本轮继续蹉跎等待 DecideNextGoal 判断是否还有下一步。
+end note
+
+note bottom of DecideNextGoal
+唯一的正常完成出口是 CheckGoalCompletion 判定 is_completed=true，直接返回
+route=normal_completed；本图不再有单独的 CompleteTask 代码节点承担这一职责。
+DecideNextGoal 返回 no_next_command 现在等价于"根目标无法达成"，
+直接收尾为 failed / diagnostics.reason_code=goal_unreachable / route=fallback_required，
+不再被当作正常完成的充分条件（对应 review-issues.md 问题1的根因修复）。
+四种降级原因（no_tool_matched、max_commands_exceeded、repeated_goal_failure、goal_unreachable）
+均不经统一判别节点，各自在对应位置直接登记 diagnostics 并返回 route=fallback_required。
+本图不发送 A2A completed，也不生成或发送 surface；外层图 08 消费 route 后再完成对应流程。
+end note
+@enduml

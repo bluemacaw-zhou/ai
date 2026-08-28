@@ -1,0 +1,33 @@
+﻿@startuml
+title Harness：Render Tool 按 SQL 创建或更新 UI
+autonumber
+hide footbox
+skinparam shadowing false
+
+participant "Harness MainGraph" as Graph
+database "HarnessState" as State
+participant "Render Tool" as RenderTool
+participant "A2aAgentExecutor" as Executor
+participant "A2UI Client" as Client
+
+Graph -> Graph : AssessPresentation = render
+Graph -> State : AppendRenderCommand\n追加 render CommandRecord(pending)\ninput = {requirement, sql, data, meta_data}
+Graph -> RenderTool : ExecuteCurrentCommand 的 tool_call\nRenderCommandInput + render_registry + latest_a2ui_surface
+
+alt SQL 首次出现
+  RenderTool -> RenderTool : 生成并校验新 UI 节点\n创建节点 + 填充 data model
+  RenderTool -> RenderTool : 登记 sql -> surfaceId
+else SQL 已绑定 surfaceId
+  RenderTool -> RenderTool : 只更新该 UI 节点的 data model
+end
+
+RenderTool --> Graph : ToolMessage\n{render_registry, a2ui_surface, surface_id, published_operations}
+Graph -> State : RegisterCommandResult\nrender -> succeeded\n回写 render_registry 与 latest_a2ui_surface
+Graph --> Executor : 最新完整 A2UI surface
+Executor --> Client : A2A artifact / surface update
+
+note over RenderTool,State
+一个 render CommandRecord 只对应一个 SQL 与一个 UI 目标。
+Render Tool 决定创建或更新；Harness 不传递 surfaceId。
+end note
+@enduml
