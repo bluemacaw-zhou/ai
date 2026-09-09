@@ -22,3 +22,31 @@ llm:
 # Deliberately empty: add real MCP sources only in the target environment.
 mcp:
   servers: {}
+
+# Judge0 CE is optional. SandboxHarnessGraph reads this block only when it is used.
+sandbox:
+  judge0:
+    base_url: "http://127.0.0.1:2358"
+    # auth_token: "replace-with-your-judge0-token"
+    poll_interval_seconds: 0.5
+    poll_timeout_seconds: 30
+  # Full files live in MinIO. Only asset metadata enters the code-generation prompt.
+  minio:
+    endpoint: "127.0.0.1:9000"
+    bucket: "sandbox-data"
+    access_key: "${MINIO_ACCESS_KEY}"
+    secret_key: "${MINIO_SECRET_KEY}"
+    secure: false
+    presigned_url_expiry_seconds: 600
+
+# OpenViking Server is the retrieval engine for OpenVikingRagGraph.
+rag:
+  openviking:
+    base_url: "http://127.0.0.1:1933"
+    # api_key: "replace-with-a-user-key"
+    # account: "required-only-when-using-a-root-key"
+    # user: "required-only-when-using-a-root-key"
+    target_uri: "viking://resources/knowledge-base/"
+    context_types: ["resource"]
+    limit: 6
+    timeout_seconds: 45
