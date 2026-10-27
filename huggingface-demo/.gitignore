@@ -1,0 +1,7 @@
+model/
+data/
+params/
+.venv/
+__pycache__/
+config.yaml
+logs/
