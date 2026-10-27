@@ -5,6 +5,7 @@ description = "Hugging Face core components course examples"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "ai-starter",
+    "huggingface-hub>=0.36,<1",
     "requests>=2.32,<3",
     "torch==2.8.0",
     "transformers>=4.45,<5",
