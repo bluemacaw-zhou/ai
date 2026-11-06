@@ -1,0 +1,4 @@
+# 空文件路径表示仅输出到控制台。
+logging:
+  level: INFO
+  file: ""

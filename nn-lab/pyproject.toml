@@ -1,0 +1,16 @@
+[project]
+name = "nn-lab"
+version = "0.1.0"
+description = "从线性回归到 Transformer 的神经网络学习实验"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["linear-demo"]
+
+[dependency-groups]
+dev = ["jupyterlab>=4,<5", "ipykernel>=6,<8"]
