@@ -59,6 +59,9 @@ LlamaIndex RAG 完整流程演示，包含 RAG Fusion 和 Rerank。
 
 ### 🐍 学习项目
 
+#### [nn-lab](./nn-lab/README.md) - 神经网络实验
+使用 uv workspace 统一管理从线性回归到 Transformer 的学习章节。首个章节为 [linear-demo](./nn-lab/linear-demo/README.md)，包含 NumPy 手写梯度下降和拟合可视化。
+
 #### [python-practice](./python-practice/README.md) - Python 练习
 Python 语法和编码规范示例。
 
