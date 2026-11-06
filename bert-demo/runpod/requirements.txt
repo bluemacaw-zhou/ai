@@ -1,0 +1,8 @@
+# Direct training dependencies installed on top of the Runpod official image.
+# torch is provided by the base image (2.8.0+cu128); never pin it here.
+# Used by both options: the Dockerfile (option A) and the Pod venv (option B).
+# Transitive dependencies are resolved at install time; this is not a full lockfile.
+transformers==4.57.6
+datasets==3.6.0
+httpx==0.28.1
+PyYAML==6.0.3

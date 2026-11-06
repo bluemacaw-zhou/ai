@@ -1,0 +1,8 @@
+# Local build output
+.image-ref*
+# Local paid-resource tracking; do not remove while creation status is uncertain.
+.rental.json*
+.rent.lock
+# Offline wheelhouse prepared by wheels.sh (platform binaries, regenerated on demand)
+wheels/
+.wheels.tmp/

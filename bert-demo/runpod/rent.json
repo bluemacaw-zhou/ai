@@ -1,0 +1,16 @@
+{
+  "cloud_type": "COMMUNITY",
+  "max_gpu_price_per_hour": 0.25,
+  "min_vram_gb": 8,
+  "gpu_name_pattern": "^NVIDIA GeForce RTX (30|40)[0-9]{2}( Ti| SUPER| Ti SUPER)?$",
+  "min_cuda_version": "12.8",
+  "registry_auth_name": "github-ghcr",
+  "ssh_public_key": "~/.ssh/runpod.pub",
+  "container_disk_gb": 40,
+  "volume_gb": 10,
+  "max_capacity_attempts": 5,
+  "excluded_gpu_ids": [
+    "NVIDIA GeForce RTX 3070",
+    "NVIDIA GeForce RTX 3070 Ti"
+  ]
+}

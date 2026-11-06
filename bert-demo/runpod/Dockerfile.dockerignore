@@ -1,0 +1,22 @@
+# Dockerfile-specific ignore file; build context is the project root.
+**
+!/*.py
+!/pyproject.toml
+!/config.yaml
+!/runpod/
+!/runpod/check_resources.py
+!/runpod/train_cuda.py
+!/runpod/check_cuda.py
+!/runpod/requirements.txt
+!/runpod/wheels/
+!/runpod/wheels/*.whl
+!/model/
+!/model/bert-base-chinese/
+!/model/bert-base-chinese/**
+!/data/
+!/data/ChnSentiCorp/
+!/data/ChnSentiCorp/**
+**/.DS_Store
+**/__pycache__
+**/.cache
+**/.env*
