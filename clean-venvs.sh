@@ -1,48 +1,32 @@
 #!/bin/bash
-# 清理所有项目的虚拟环境目录（Git Bash）
+# 从脚本所在仓库递归查找虚拟环境，兼容 macOS 和 Linux。
+set -euo pipefail
 
-echo "========================================"
-echo "清理所有 .venv 虚拟环境目录"
-echo "========================================"
-echo
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd -- "$repo_root"
 
-# 列出所有 .venv 目录
-echo "找到以下虚拟环境目录："
-echo
-find . -type d -name ".venv" -maxdepth 2 2>/dev/null
-echo
+venv_dirs=()
+while IFS= read -r -d '' venv_dir; do
+    venv_dirs+=("$venv_dir")
+done < <(find . -type d \( -name .git -o -name node_modules \) -prune -o -type d -name .venv -print0 -prune)
 
-# 统计数量
-count=$(find . -type d -name ".venv" -maxdepth 2 2>/dev/null | wc -l)
-if [ $count -eq 0 ]; then
-    echo "没有找到任何虚拟环境目录"
+if [ "${#venv_dirs[@]}" -eq 0 ]; then
+    echo "没有找到 .venv 虚拟环境目录"
     exit 0
 fi
 
-echo "共找到 $count 个虚拟环境"
-echo
-
-# 确认删除
-read -p "确认删除以上所有虚拟环境？(y/N): " confirm
+printf '找到以下虚拟环境目录：\n'
+printf '  %s\n' "${venv_dirs[@]}"
+printf '\n共找到 %s 个虚拟环境\n' "${#venv_dirs[@]}"
+read -r -p "确认删除以上所有虚拟环境？(y/N): " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     echo "已取消操作"
     exit 0
 fi
 
-echo
-echo "开始删除虚拟环境..."
-echo
-
-# 删除所有 .venv 目录
-find . -type d -name ".venv" -maxdepth 2 2>/dev/null | while read dir; do
-    echo "正在删除: $dir"
-    rm -rf "$dir"
+for venv_dir in "${venv_dirs[@]}"; do
+    printf '正在删除: %s\n' "$venv_dir"
+    rm -rf -- "$venv_dir"
 done
 
-echo
-echo "========================================"
-echo "清理完成！"
-echo "========================================"
-echo
-echo "提示：在各项目目录运行 'uv sync' 可重新创建虚拟环境"
-echo
+echo "清理完成。在各独立项目目录运行 uv sync 可重新创建环境；nn-lab 使用 uv sync --all-packages。"

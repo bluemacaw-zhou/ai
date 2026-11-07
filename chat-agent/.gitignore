@@ -29,3 +29,6 @@ __pycache__/
 .idea/*
 !.idea/runConfigurations/
 !.idea/runConfigurations/*.xml
+
+# Local application configuration
+/config.yaml

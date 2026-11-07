@@ -1,5 +1,8 @@
 # Python 环境搭建指南
 
+> 当前仓库各项目独立使用 uv，开发解释器为 Python 3.13，默认使用官方 PyPI。下文公司代理配置保留为历史环境示例，当前无需配置。最新目录和运行约定见 [README.md](README.md)。
+
+
 本文档介绍如何从零开始搭建 Python 开发环境，包括工具安装、代理配置、项目打包等完整流程。
 
 所有示例基于当前工作区的实际项目结构进行说明。
@@ -151,8 +154,8 @@ dependencies = [
 ]
 
 [tool.uv]
-# 项目级别的索引源（覆盖全局配置）
-index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+# 历史公司包源（当前停用）
+# index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
 # package = false 表示这是应用项目，不打包为库
 package = false
 

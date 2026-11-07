@@ -13,7 +13,6 @@ dependencies = [
 ]
 
 [tool.uv]
-index-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
 package = false
 
 [tool.uv.sources]

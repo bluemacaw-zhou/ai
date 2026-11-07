@@ -1,6 +1,38 @@
 # AI 工作区
 
-AI 相关开发项目的 Python monorepo，包含基于 LangChain、LlamaIndex 等框架的多个演示项目。
+AI 相关开发项目的 Python monorepo，各顶层项目独立使用 uv 管理依赖。
+
+## 环境管理约定
+
+- 仓库根目录不声明 uv workspace，也不创建统一的 Python 环境。
+- 每个顶层项目拥有自己的 `pyproject.toml`、`.python-version`、`uv.lock` 和 `.venv/`。
+- 当前各项目开发解释器固定为 Python 3.13；兼容范围仍由各自的 `requires-python` 声明。
+- `nn-lab` 内部使用 uv workspace：章节共享 `nn-lab/.venv` 和 `nn-lab/uv.lock`。
+- 默认使用官方 PyPI，根 `uv.toml` 保留已注释的历史公司代理配置。
+- `ai-starter` 是可编辑安装的共享库，使用它的项目通过本地路径声明依赖；不需要先单独安装它。
+- 提交各项目的 `uv.lock` 和 `.python-version`；忽略 `.venv/` 和本地配置文件。
+
+## 项目入口
+
+以下命令从仓库根目录执行；首次运行前使用 `uv sync --project <项目名> --locked` 安装该项目依赖。
+
+| 项目 | 用途 | 运行或阅读入口 |
+|---|---|---|
+| `ai-starter` | 共享工具库 | [说明](ai-starter/README.md)，由其他项目引用 |
+| `rag-demo` | LangChain 文档问答 | [说明](rag-demo/README.md) |
+| `llama-demo` | LlamaIndex RAG | [说明](llama-demo/README.md) |
+| `workflow-demo` | LlamaIndex Text-to-SQL | [说明](workflow-demo/README.md) |
+| `chromadb-demo` | 向量数据库操作 | [说明](chromadb-demo/README.md) |
+| `fastmcp-demo` | MCP 服务 | [说明](fastmcp-demo/readme.md) |
+| `function-call-demo` | 工具调用实验 | `function-call-demo/function_call_demo/` |
+| `huggingface-demo` | Hugging Face API、模型与 Transformers 实验 | `huggingface-demo/API_test/`、`huggingface-demo/trsanformers_test/` |
+| `bert-demo` | BERT 模型训练与评估 | [说明](bert-demo/README.md) |
+| `pytorch-demo` | PyTorch 训练示例 | `uv run --project pytorch-demo python pytorch-demo/main.py` |
+| `chat-agent` | LangGraph + FastAPI 聊天服务 | `uv run --project chat-agent python chat-agent/src/main.py`，见[说明](chat-agent/README.md) |
+| `python-practice` | Python 基础练习 | [说明](python-practice/README.md) |
+| `nn-lab` | 从线性回归到 Transformer 的学习实验 | `cd nn-lab` 后执行 `uv sync --all-packages --locked` 和 `uv run jupyter lab` |
+
+根目录执行 `bash clean-venvs.sh` 可递归查找虚拟环境，确认后删除。
 
 ## 技术栈
 
@@ -127,12 +159,12 @@ http:
 # 进入项目目录
 cd <项目目录>
 
-# 运行测试脚本
-python <项目包名>/test_*.py
+# 使用当前项目的虚拟环境运行脚本
+uv run python <项目包名>/test_*.py
 
 # 例如：
 cd llama-demo
-python llama_demo/test_llama_pipeline.py
+uv run python llama_demo/test_llama_pipeline.py
 ```
 
 ---

@@ -9,7 +9,8 @@ Python monorepo with AI-related projects. Uses **uv** for dependency management.
 **Tech Stack:**
 - Python 3.13
 - uv (package manager)
-- Private PyPI: `http://10.100.1.27:8688/repository/Pypi-group/simple`
+- Package index: official PyPI; the old company proxy is commented out in root `uv.toml`.
+- Each top-level project manages its own `.venv` and `uv.lock`; only `nn-lab` uses an internal uv workspace.
 
 ## Project Structure
 
@@ -240,7 +241,7 @@ ai-starter = { path = "../ai-starter", editable = true }
 
 ## CRITICAL Rules
 
-1. **⚠️ Proxy Environment**: NEVER execute `pip`, `uv`, `curl` in Claude Code terminal. Tell user to run commands in their terminal due to proxy issues.
+1. **Dependency management**: Use `uv` in the target project directory. The historical company proxy is disabled; do not restore it without a user request.
 
 2. **⚠️ No Unsolicited Documentation**: DO NOT create or modify documentation files (.md) or test cases unless explicitly requested by the user. This includes:
    - README files

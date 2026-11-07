@@ -30,25 +30,11 @@ uv run python model_tokenizer_download.py  # → model/bert-base-chinese/
 ⠧ Preparing packages... (0/1)
 ```
 
-说明 uv 正在重新构建 editable 依赖 `ai-starter`，需要从私有源 `10.100.1.27` 下载构建工具 hatchling。不在内网时连不上该地址，就会一直等待。
+说明 uv 正在构建可编辑依赖 `ai-starter`，可能需要下载构建工具 hatchling。当前默认使用官方 PyPI。
 
-用 `-v` 查看详细日志，确认卡在哪一步：
+用 `uv run -v python predict.py` 查看详细日志。如果仍请求旧公司地址 `10.100.1.27`，检查用户级 uv 配置或环境变量中的包源设置；项目级旧包源已移除。
 
-```bash
-uv run -v python predict.py
-```
-
-如果日志停在请求 `10.100.1.27`（如下载 hatchling），说明是网络问题。处理方式：
-
-```bash
-# 依赖已装好时：跳过同步直接运行
-uv run --no-sync python predict.py
-# 或在已激活的虚拟环境中直接运行
-python predict.py
-
-# 确实需要同步时：连上内网/VPN 后执行 uv sync，或尝试使用本地缓存
-uv sync --offline
-```
+依赖已经安装且只需临时跳过同步时，可以运行 `uv run --no-sync python predict.py`；缓存完整时也可以使用 `uv sync --offline`。
 
 ## 入口层用法
 

@@ -1,3 +1,5 @@
-[[index]]
-url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
-default = true
+# 历史公司代理仓库，当前停用；默认使用官方 PyPI。
+# 如需恢复，请取消以下三行注释。
+# [[index]]
+# url = "http://10.100.1.27:8688/repository/Pypi-group/simple"
+# default = true
