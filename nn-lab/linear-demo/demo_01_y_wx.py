@@ -1,10 +1,14 @@
-"""训练单参数模型并实时观察直线拟合过程。"""
+"""训练单参数模型，同时观察拟合直线、epoch-loss 和 W-loss。"""
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 from ai_starter import get_logger
 
 from tool.fitting_plot import FittingPlot
+from tool.linear_fit_plot import LinearFitPlot
+from tool.epoch_loss_plot import EpochLossPlot
+from tool.weight_loss_plot import WeightLossPlot
 
 # Scalar 表示一个数：可能是 Python 数值，也可能是 NumPy 数值标量；不是数组。
 Scalar = int | float | np.int64 | np.float32 | np.float64
@@ -21,7 +25,7 @@ log = get_logger(__name__)
 
 # 让线性模型学会 y=3x
 class LinearWeightDemo:
-    """训练单参数模型并实时观察直线拟合过程。"""
+    """训练单参数模型，同时观察拟合直线、epoch-loss 和 W-loss。"""
 
     def run(self) -> None:
         """按阅读顺序执行本节示例。"""
@@ -54,15 +58,23 @@ class LinearWeightDemo:
         # Python 浮点标量，一个数。
         lr: float = 0.01
 
-        # 创建公共拟合图，每轮停留0.5秒，观察直线如何靠近真实点
-        plot: FittingPlot = FittingPlot(X, Y, W, interval=0.5)
+        # 创建三个独立窗口，共用同一次训练的数据，每轮同时更新并停留 0.5 秒。
+        plots: tuple[FittingPlot, ...] = (
+            LinearFitPlot(X, Y, W, interval=0.0),
+            EpochLossPlot(interval=0.0),
+            WeightLossPlot(interval=0.0),
+        )
+        plt.show(block=False)
+        # 从左到右：拟合直线、epoch-loss、W-loss，避免窗口相互遮挡。
+        FittingPlot.arrange_side_by_side(plots)
 
         # 训练循环
         # epoch: int，当前训练轮次（从 0 开始）。
         for epoch in range(20):
-            # 关闭窗口时结束训练
-            if not plot.is_open():
-                plot.finish()
+            # 关闭任意一个窗口时结束训练
+            if not all(plot.is_open() for plot in plots):
+                plt.ioff()
+                plt.show(block=True)
                 return
 
             # 前向传播
@@ -83,7 +95,7 @@ class LinearWeightDemo:
             loss: Scalar = np.mean(error ** 2)
 
             # 展示当前参数的结果；epoch 表示已经完成的参数更新次数。
-            self.plot_training(plot, epoch, W)
+            self.plot_training(plots, epoch, W, Y_pred, loss)
             log.info(f'epoch={epoch}, loss={loss:.6f}, W={W:.6f}')
 
             # 反向传播
@@ -112,19 +124,26 @@ class LinearWeightDemo:
 
         # 循环结束后统一展示最后一次更新的结果，避免在每轮中重复预测。
         loss = np.mean((Y_pred - Y) ** 2)
-        self.plot_training(plot, epoch + 1, W)
+        self.plot_training(plots, epoch + 1, W, Y_pred, loss)
         log.info(f'最终 epoch={epoch + 1}, loss={loss:.6f}, W={W:.6f}')
 
         # 肉眼就可以看出来，是线性的。线性模型学习过程中，找到一根线，把这几个点串起来，就搞定
         log.info(f'最终预测结果:\n{Y_pred}')
         log.info(f'正确结果:\n{Y}')
 
-        # 训练结束后保留最终图形，关闭窗口后退出
-        plot.finish()
+        # 训练结束后保留三个窗口，全部关闭后退出
+        plt.ioff()
+        plt.show(block=True)
 
-    def plot_training(self, plot: FittingPlot, epoch: int, w: Scalar) -> None:
-        # 绘图交给公共工具，训练循环只传入当前轮次和权重
-        plot.update(epoch, w)
+    def plot_training(self, plots: tuple[FittingPlot, ...], epoch: int, w: Scalar,
+                      prediction: NDArray[np.float64], loss: Scalar) -> None:
+        # 三个窗口共用当前轮次、权重、预测值和损失，不再各自训练或重复计算。
+        if not all(plot.is_open() for plot in plots):
+            return
+        for plot in plots:
+            plot.update(epoch, w, prediction=prediction, loss=loss)
+        # 三张图全部更新后只暂停一次，同时响应所有窗口的事件。
+        plt.pause(0.5)
 
 
 if __name__ == "__main__":
